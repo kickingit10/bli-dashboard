@@ -236,6 +236,36 @@ let D, CONTRACTS, DRIVER_ROLES;
   }
 
 
+function parseWE(s){
+  if(!s)return new Date(0);
+  const p=s.split('/');
+  if(p.length===3){
+    const yr=p[2].length===2?2000+parseInt(p[2]):parseInt(p[2]);
+    return new Date(yr,parseInt(p[0])-1,parseInt(p[1]));
+  }
+  return new Date(s);
+}
+
+function weToISO(we){
+  const d=parseWE(we);
+  return d.toISOString().slice(0,10);
+}
+
+function isPeak(we){
+  const d=parseWE(we);
+  return d>=new Date(2025,9,1)&&d<=new Date(2026,0,7); // Oct 1 - Jan 7
+}
+
+function hasSurge(w){return w.fs>0||w.peak>0}
+
+function getContract(we){
+  const d=parseWE(we);
+  for(const c of CONTRACTS){
+    if(d>=parseWE(c.start)&&d<=parseWE(c.end)) return c;
+  }
+  return CONTRACTS[CONTRACTS.length-1];
+}
+
 // Compute driver_days
 D.forEach(w=>{w.driver_days=w.drv.reduce((s,d)=>s+d.days,0)});
 
