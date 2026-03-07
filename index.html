@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Better Logistics Inc — Home</title>
+<style>
+:root{--blue:#2563eb;--dark:#1a1a2e;--gray:#6b7280;--light:#f8fafc;--border:#e2e8f0}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;color:var(--dark);min-height:100vh}
+
+.hero{background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);color:#fff;padding:60px 20px 80px;text-align:center;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;bottom:-40px;left:0;right:0;height:80px;background:#f0f2f5;border-radius:50% 50% 0 0 / 100% 100% 0 0;transform:scaleX(1.5)}
+.hero h1{font-size:32px;font-weight:700;margin-bottom:8px;letter-spacing:-0.5px}
+.hero .sub{font-size:14px;opacity:0.85;margin-bottom:30px}
+.hero .badge{display:inline-block;background:rgba(255,255,255,0.15);padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:24px;backdrop-filter:blur(4px)}
+.hero-btn{display:inline-block;background:#fff;color:var(--blue);padding:14px 36px;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;transition:all .2s;box-shadow:0 4px 16px rgba(0,0,0,0.2)}
+.hero-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,0.3)}
+
+.container{max-width:900px;margin:-30px auto 0;padding:0 20px 60px;position:relative;z-index:1}
+
+.card{background:#fff;border-radius:12px;padding:28px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:20px}
+.card h2{font-size:18px;font-weight:700;margin-bottom:14px;color:var(--dark);display:flex;align-items:center;gap:10px}
+.card h2 .icon{font-size:22px}
+.card p{font-size:14px;line-height:1.7;color:#374151;margin-bottom:10px}
+.card ul{list-style:none;padding:0}
+.card li{padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#374151;display:flex;gap:10px;align-items:flex-start}
+.card li:last-child{border-bottom:none}
+.card li .step{background:var(--blue);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+
+.views-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+.view-card{background:var(--light);border-radius:10px;padding:18px;border:1px solid var(--border)}
+.view-card h3{font-size:15px;font-weight:700;margin-bottom:8px;color:var(--dark)}
+.view-card p{font-size:13px;line-height:1.6;color:var(--gray);margin-bottom:0}
+
+.metric-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.metric{background:var(--light);border-radius:8px;padding:10px 14px;border:1px solid var(--border)}
+.metric .name{font-size:12px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:0.3px}
+.metric .desc{font-size:13px;color:#374151;margin-top:2px}
+
+.tip-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px 18px;margin-top:14px}
+.tip-box h4{font-size:13px;font-weight:700;color:#1d4ed8;margin-bottom:6px}
+.tip-box p{font-size:13px;color:#1e40af;margin-bottom:0;line-height:1.6}
+
+.footer{text-align:center;padding:20px;color:var(--gray);font-size:12px}
+
+@media(max-width:600px){
+  .hero h1{font-size:24px}
+  .views-grid,.metric-list{grid-template-columns:1fr}
+  .container{padding:0 14px 40px}
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">ISP C8882435 &bull; Station 00265 Morgantown &bull; CSA 303475</div>
+  <h1>Better Logistics Inc</h1>
+  <p class="sub">FedEx Ground ISP Operations Dashboard</p>
+  <a href="dashboard.html" class="hero-btn">Open Dashboard</a>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <h2><span class="icon">&#128202;</span> What Is This Dashboard?</h2>
+    <p>This dashboard transforms your weekly FedEx Ground charge statements into actionable insights. Instead of manually reviewing PDF statements, you get automated tracking of revenue, stop counts, driver performance, contract rates, and surcharges — all in one place.</p>
+    <p>Data is updated weekly as new charge statements are released by FedEx. The dashboard currently tracks <strong>19 weeks</strong> of data from October 2025 through February 2026.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">&#128065;</span> Two Views</h2>
+    <p>The dashboard has two views designed for different needs:</p>
+    <div class="views-grid">
+      <div class="view-card">
+        <h3>Executive View</h3>
+        <p>High-level financial and operational summary. See weekly revenue, cost trends, contract rate changes, and surcharge impacts at a glance. Best for weekly check-ins and owner-level decisions.</p>
+      </div>
+      <div class="view-card">
+        <h3>Operations View</h3>
+        <p>Driver-by-driver performance breakdown. Compare stops per day, package mix, work intensity, and efficiency across your entire team. Best for route optimization and driver coaching.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">&#128200;</span> Key Metrics Explained</h2>
+    <div class="metric-list">
+      <div class="metric">
+        <div class="name">Net Revenue</div>
+        <div class="desc">Total settlement after all charges, deductions, and adjustments</div>
+      </div>
+      <div class="metric">
+        <div class="name">Rev / Stop</div>
+        <div class="desc">Average revenue earned per delivery stop — your unit economics</div>
+      </div>
+      <div class="metric">
+        <div class="name">DESIG %</div>
+        <div class="desc">Contract designation rate. Changes with new contract periods (7.63% → 7.19% → 7.07%)</div>
+      </div>
+      <div class="metric">
+        <div class="name">Pkg / Stop</div>
+        <div class="desc">Average packages per stop — higher means more efficient dense routes</div>
+      </div>
+      <div class="metric">
+        <div class="name">Stops / Driver-Day</div>
+        <div class="desc">How many stops each driver completes per working day</div>
+      </div>
+      <div class="metric">
+        <div class="name">Peak / Surcharges</div>
+        <div class="desc">Seasonal charges: Surge Stop ($13.50/stop), Peak Service ($1,100/wk), P&D adjustments</div>
+      </div>
+    </div>
+    <div class="tip-box">
+      <h4>Hover for Details</h4>
+      <p>Hover over any KPI card at the top of the dashboard to see a detailed tooltip breakdown. The Executive rev/stop card shows per-contract-period averages.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">&#128197;</span> Date Filtering</h2>
+    <p>Use the date range picker in the top-right corner to focus on specific time periods:</p>
+    <ul>
+      <li><span class="step">1</span> <div><strong>Preset Ranges:</strong> Quick buttons for Last 4 Weeks, Last 8 Weeks, Last 13 Weeks (quarter), Year-to-Date, and All Data.</div></li>
+      <li><span class="step">2</span> <div><strong>Custom Range:</strong> Select "Custom" from the dropdown, then pick specific start and end dates to zoom into any period.</div></li>
+      <li><span class="step">3</span> <div><strong>Contract Awareness:</strong> The dashboard automatically shows color-coded bands on charts indicating which contract period applies (blue, green, or gold).</div></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">&#128101;</span> Driver Tags</h2>
+    <p>In the Operations view, drivers are automatically tagged based on their work patterns:</p>
+    <ul>
+      <li><span class="step" style="background:#7c3aed">B</span> <div><strong>Bulk</strong> — Primarily handles large/bulk deliveries with high package counts but fewer stops</div></li>
+      <li><span class="step" style="background:#0369a1">M</span> <div><strong>Manager</strong> — Operations manager who works limited days but handles dispatch/pickup-heavy roles</div></li>
+      <li><span class="step" style="background:#059669">N</span> <div><strong>New / Ramp</strong> — Driver with fewer than 3 working days, likely new or part-time</div></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">&#9889;</span> Quick Start</h2>
+    <ul>
+      <li><span class="step">1</span> <div>Click <strong>"Open Dashboard"</strong> above to launch the full analytics view</div></li>
+      <li><span class="step">2</span> <div>Start in <strong>Executive View</strong> for a financial overview of the latest week</div></li>
+      <li><span class="step">3</span> <div>Check the <strong>alert banner</strong> (if visible) for any notable changes like contract rate shifts or peak season surcharges</div></li>
+      <li><span class="step">4</span> <div>Switch to <strong>Operations View</strong> to drill into individual driver performance</div></li>
+      <li><span class="step">5</span> <div>Use <strong>date filtering</strong> to compare periods — e.g., peak season vs. normal weeks</div></li>
+    </ul>
+  </div>
+
+</div>
+
+<div class="footer">
+  Better Logistics Inc &bull; Dashboard v7 &bull; Updated March 2026
+</div>
+
+</body>
+</html>

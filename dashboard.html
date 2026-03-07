@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Better Logistics Inc — Dashboard v7</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+<style>
+:root{--blue:#2563eb;--purple:#7c3aed;--green:#059669;--orange:#d97706;--red:#dc2626;--dark:#1a1a2e;--gray:#6b7280;--light:#f8fafc;--border:#e2e8f0}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;color:var(--dark)}
+.dash{max-width:1440px;margin:0 auto;padding:20px}
+header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.header-left h1{font-size:22px;font-weight:700}
+.header-left .sub{font-size:12px;color:var(--gray);margin-top:2px}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.controls select,.controls button,.controls input[type=date]{padding:7px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;cursor:pointer}
+.view-toggle{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.view-toggle button{border:none;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.view-toggle button.active{background:var(--blue);color:#fff}
+.view-toggle button:not(.active){background:#fff;color:var(--dark)}
+.date-controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.date-controls label{font-size:11px;color:var(--gray);font-weight:600}
+.date-controls input[type=date]{padding:5px 8px;font-size:12px;border:1px solid var(--border);border-radius:6px}
+
+.contract-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;margin-left:6px}
+.contract-badge.c1{background:#dbeafe;color:#1e40af}
+.contract-badge.c2{background:#d1fae5;color:#065f46}
+.contract-badge.c3{background:#fef3c7;color:#92400e}
+.peak-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;background:#fef2f2;color:#b91c1c;margin-left:4px}
+
+.alert{background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:12px 18px;margin-bottom:20px;font-size:13px;color:#92400e;display:none;line-height:1.6}
+.alert strong{color:#78350f}
+
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);position:relative}
+.kpi .lbl{font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.kpi .val{font-size:22px;font-weight:700;margin:4px 0}
+.kpi .chg{font-size:12px;font-weight:600}
+.kpi .chg.up{color:var(--green)}.kpi .chg.down{color:var(--red)}.kpi .chg.flat{color:var(--gray)}
+.kpi .tip{display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:100;font-size:12px;line-height:1.6}
+.kpi:hover .tip{display:block}
+.kpi .tip h4{font-size:11px;text-transform:uppercase;color:var(--gray);margin-bottom:4px}
+.kpi .tip .tip-row{display:flex;justify-content:space-between;padding:2px 0}
+.kpi .tip .tip-label{color:var(--gray)}
+.kpi .tip .tip-val{font-weight:600}
+
+.section{display:none}.section.active{display:block}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.card{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card h3{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--dark)}
+.card canvas{max-height:280px}
+.card-full{grid-column:1/-1}
+
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f8fafc;padding:8px 6px;text-align:left;font-weight:600;border-bottom:2px solid var(--border);color:var(--gray);font-size:11px;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;white-space:nowrap;user-select:none}
+th.asc::after{content:' ▲';font-size:9px}
+th.desc::after{content:' ▼';font-size:9px}
+td{padding:7px 6px;border-bottom:1px solid #f1f5f9}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:hover{background:#f8fafc}
+.flag{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:middle}
+.flag-high{background:#fef2f2;color:#b91c1c}.flag-low{background:#eff6ff;color:#1d4ed8}
+.flag-new{background:#f0fdf4;color:#15803d}.flag-ramp{background:#fefce8;color:#a16207}
+.flag-bulk{background:#faf5ff;color:#7c3aed}.flag-mgr{background:#f0f9ff;color:#0369a1}
+.flag-surge{background:#fef2f2;color:#b91c1c}.flag-peak{background:#fff7ed;color:#c2410c}
+.flag-adj{background:#fef3c7;color:#92400e}
+.tag{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px}
+.tag-ec{background:#d1fae5;color:#065f46}.tag-mix{background:#dbeafe;color:#1e40af}
+.tag-del{background:#ede9fe;color:#5b21b6}.tag-heavy{background:#fef3c7;color:#92400e}
+.tag-route{background:#f3e8ff;color:#6b21a8}.tag-bulk{background:#faf5ff;color:#7c3aed}
+.tag-mgr{background:#f0f9ff;color:#0369a1}
+.bar-cell{display:flex;align-items:center;height:16px}
+.bar-seg{height:100%;min-width:1px}
+.bar-pu{background:#93c5fd}.bar-del{background:#6366f1}.bar-ec{background:#34d399}
+.up{color:var(--green)}.down{color:var(--red)}.flat{color:var(--gray)}
+
+/* Surcharge card */
+.surcharge-bar{height:24px;border-radius:4px;display:flex;overflow:hidden;margin:4px 0}
+.surcharge-bar div{height:100%;min-width:2px}
+
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}.kpi-row{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div class="dash">
+
+<header>
+  <div class="header-left">
+    <h1>Better Logistics Inc</h1>
+    <div class="sub">ISP C8882435 &bull; Station 00265 Morgantown &bull; CSA 303475 &bull; <span id="contractInfo"></span></div>
+  </div>
+  <div class="controls">
+    <div class="view-toggle">
+      <button id="btnExec" class="active" onclick="setView('exec')">Executive</button>
+      <button id="btnOps" onclick="setView('ops')">Operations</button>
+    </div>
+    <select id="range" onchange="onRangeChange()">
+      <option value="4">Last 4 Weeks</option>
+      <option value="8">Last 8 Weeks</option>
+      <option value="13">Last 13 Weeks</option>
+      <option value="0" selected>All Data</option>
+      <option value="ytd">YTD</option>
+      <option value="custom">Custom Range</option>
+    </select>
+    <div id="customDates" class="date-controls" style="display:none">
+      <label>From</label><input type="date" id="dateFrom" onchange="render()">
+      <label>To</label><input type="date" id="dateTo" onchange="render()">
+    </div>
+  </div>
+</header>
+
+<div id="alert" class="alert"></div>
+<div id="kpiRow" class="kpi-row"></div>
+
+<!-- EXECUTIVE VIEW -->
+<div id="execView" class="section active">
+  <div class="grid-2">
+    <div class="card"><h3>Weekly Settlement</h3><canvas id="cRev"></canvas></div>
+    <div class="card"><h3>Revenue per Route (P&D / Driver-Day)</h3><canvas id="cRoute"></canvas></div>
+  </div>
+  <div class="grid-3">
+    <div class="card"><h3>Cost Mix — Current Week</h3><canvas id="cMix"></canvas></div>
+    <div class="card"><h3>Package Volume</h3><canvas id="cVolPkg"></canvas></div>
+    <div class="card"><h3>Stop Volume</h3><canvas id="cVolStop"></canvas></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><h3>Surcharges & Peak Charges</h3><canvas id="cSurcharge"></canvas></div>
+    <div class="card"><h3>Contract Rate (DESIG %)</h3><canvas id="cDesig"></canvas></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><h3>Fuel Rate</h3><canvas id="cFuel"></canvas></div>
+    <div class="card"><h3>Large Package Surcharge</h3><canvas id="cLargePkg"></canvas></div>
+  </div>
+
+  <!-- Weekly Summary Table -->
+  <div class="card card-full" style="margin-bottom:16px">
+    <h3>Weekly Summary</h3>
+    <div style="overflow-x:auto">
+    <table id="execTable">
+      <thead><tr>
+        <th data-c="we">Week</th><th data-c="net">Net Settlement</th><th data-c="pd">P&D Rev</th>
+        <th data-c="revRoute">Rev/Route</th><th data-c="desig">DESIG %</th><th data-c="fixPct">Fixed %</th>
+        <th data-c="tp">Total Pkgs</th><th data-c="ts">Total Stops</th>
+        <th data-c="dc">Drivers</th><th data-c="dd">Driver-Days</th>
+        <th data-c="fs">Surge</th><th data-c="peak">Peak</th>
+        <th data-c="adjn">P&D Adj</th>
+      </tr></thead>
+      <tbody id="execBody"></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Charge Adjustments Detail</h3>
+      <table>
+        <thead><tr><th>Week</th><th>Count</th><th>Amount</th><th>Notes</th></tr></thead>
+        <tbody id="adjBody"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Double Stops & Non-Scans</h3>
+      <table>
+        <thead><tr><th>Week</th><th>Doubles</th><th>Non-Scan</th><th>Total Stops</th><th>Dbl %</th></tr></thead>
+        <tbody id="dblBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- OPERATIONS VIEW -->
+<div id="opsView" class="section">
+  <div class="grid-2">
+    <div class="card"><h3>Workload Intensity — <span id="opsRange">All Data</span></h3><canvas id="cIntensity"></canvas>
+      <div style="margin-top:8px;font-size:10px;color:var(--gray)">Bubble size = intensity score &bull; Color = driver type &bull; Bulk/Manager drivers shown separately</div>
+    </div>
+    <div class="card"><h3>Packages per Stop (by Type)</h3><canvas id="cPPS"></canvas></div>
+  </div>
+
+  <div class="card card-full" style="margin-bottom:16px">
+    <h3>Driver Workload — <span id="opsRange2">All Data</span></h3>
+    <div style="overflow-x:auto">
+    <table id="opsTable">
+      <thead><tr>
+        <th data-c="name">Driver</th>
+        <th data-c="intensityNorm">Intensity</th>
+        <th data-c="spd">Stops/Day</th>
+        <th data-c="ppd">Pkgs/Day</th>
+        <th data-c="tot_s">Avg Stops/Wk</th>
+        <th data-c="tot_p">Avg Pkgs/Wk</th>
+        <th data-c="pps">PPS</th>
+        <th data-c="days">Days/Wk</th>
+        <th data-c="mix">Mix</th>
+        <th data-c="role">Role</th>
+        <th data-c="trend">Trend</th>
+      </tr></thead>
+      <tbody id="opsBody"></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Revenue Leaders — <span id="revLeaderRange">All Data</span></h3>
+      <canvas id="cRevLeaders"></canvas>
+    </div>
+    <div class="card">
+      <h3>Driver Comparison — <span id="opsChartRange">All Data</span></h3>
+      <canvas id="cDrivers"></canvas>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ===== DATA LOADED EXTERNALLY FROM data.json =====
+let D, CONTRACTS, DRIVER_ROLES;
+
+(async function() {
+  try {
+    const resp = await fetch('data.json');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const json = await resp.json();
+    D = json.weeks;
+    CONTRACTS = json.contracts;
+    DRIVER_ROLES = json.driverRoles;
+  } catch(e) {
+    document.querySelector('.dash').innerHTML = 
+      '<div style="text-align:center;padding:60px;color:#dc2626">' +
+      '<h2>Error Loading Data</h2>' +
+      '<p>Could not load data.json &mdash; ' + e.message + '</p></div>';
+    return;
+  }
+
+
+// Compute driver_days
+D.forEach(w=>{w.driver_days=w.drv.reduce((s,d)=>s+d.days,0)});
+
+let view='exec',charts={},sortState={exec:{col:'we',dir:'desc'},ops:{col:'intensity',dir:'desc'}};
+const fm=n=>'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fi=n=>n.toLocaleString('en-US');
+const fp=(cur,prev)=>{if(!prev||prev===0)return{t:'\u2014',c:'flat'};const p=((cur-prev)/prev*100);return{t:(p>=0?'+':'')+p.toFixed(1)+'%',c:p>=0?'up':'down'}};
+
+function onRangeChange(){
+  const v=document.getElementById('range').value;
+  document.getElementById('customDates').style.display=v==='custom'?'flex':'none';
+  if(v==='custom'){
+    if(!document.getElementById('dateFrom').value){
+      document.getElementById('dateFrom').value=weToISO(D[0].we);
+      document.getElementById('dateTo').value=weToISO(D[D.length-1].we);
+    }
+  }
+  render();
+}
+
+function getRange(){
+  const v=document.getElementById('range').value;
+  if(v==='0') return D;
+  if(v==='ytd'){
+    const now=new Date();
+    const yr=now.getFullYear();
+    return D.filter(w=>parseWE(w.we)>=new Date(yr,0,1));
+  }
+  if(v==='custom'){
+    const from=document.getElementById('dateFrom').value;
+    const to=document.getElementById('dateTo').value;
+    if(!from||!to) return D;
+    const fd=new Date(from), td=new Date(to);
+    return D.filter(w=>{const d=parseWE(w.we);return d>=fd&&d<=td});
+  }
+  const r=parseInt(v);
+  return D.slice(-r);
+}
+
+function getCurrent(range){return range.length?range[range.length-1]:D[D.length-1]}
+function getPrev(range){return range.length>1?range[range.length-2]:null}
+
+function setView(v){
+  view=v;
+  document.getElementById('btnExec').className=v==='exec'?'active':'';
+  document.getElementById('btnOps').className=v==='ops'?'active':'';
+  document.getElementById('execView').className='section'+(v==='exec'?' active':'');
+  document.getElementById('opsView').className='section'+(v==='ops'?' active':'');
+  render();
+}
+
+function render(){
+  const range=getRange();
+  if(!range.length) return;
+  const cur=getCurrent(range),prev=getPrev(range);
+  updateContractInfo(cur);
+  renderKPIs(cur,prev,range);
+  renderAlert(cur,prev,range);
+  if(view==='exec') renderExec(range,cur);
+  else renderOps(range);
+}
+
+function updateContractInfo(w){
+  const c=getContract(w.we);
+  const peakStr=isPeak(w.we)?'<span class="peak-badge">PEAK SEASON</span>':'';
+  document.getElementById('contractInfo').innerHTML=
+    `<span class="contract-badge" style="background:${c.color}20;color:${c.color}">${c.name} (DESIG ${c.desig}%)</span>${peakStr}`;
+}
+
+function renderKPIs(w,p,range){
+  const dd=w.driver_days,revRoute=dd>0?w.pd/dd:0;
+  const pdd=p?p.driver_days:null,prevRevRoute=pdd?p.pd/pdd:null;
+  const tp=w.pp+w.dp+w.ep,ptp=p?(p.pp+p.dp+p.ep):null;
+  const surcharge=w.fs+w.peak+(w.adjn||0);
+
+  // Contract period tooltip data
+  const contractGroups={};
+  range.forEach(r=>{
+    const c=getContract(r.we);
+    if(!contractGroups[c.name]) contractGroups[c.name]={name:c.name,desig:c.desig,weeks:0,totalPD:0,totalDD:0,color:c.color};
+    contractGroups[c.name].weeks++;
+    contractGroups[c.name].totalPD+=r.pd;
+    contractGroups[c.name].totalDD+=r.driver_days;
+  });
+  const contractTipRows=Object.values(contractGroups).map(c=>{
+    const avgRR=c.totalDD>0?c.totalPD/c.totalDD:0;
+    return `<div class="tip-row"><span class="tip-label">${c.name} (${c.desig}%)</span><span class="tip-val">$${avgRR.toFixed(0)}/route &middot; ${c.weeks}wk</span></div>`;
+  }).join('');
+
+  // Range averages for tooltips
+  const avgNet=range.reduce((s,r)=>s+r.net,0)/range.length;
+  const avgTP=range.reduce((s,r)=>s+r.pp+r.dp+r.ep,0)/range.length;
+  const totalSurge=range.reduce((s,r)=>s+r.fs+r.peak,0);
+  const peakWeeks=range.filter(r=>isPeak(r.we)).length;
+
+  const kpis=view==='exec'?[
+    {l:'Net Settlement',v:fm(w.net),d:fp(w.net,p?.net),
+     tip:`<h4>Settlement</h4>
+       <div class="tip-row"><span class="tip-label">Period Avg</span><span class="tip-val">${fm(avgNet)}</span></div>
+       <div class="tip-row"><span class="tip-label">P&D Variable</span><span class="tip-val">${fm(w.pd)}</span></div>
+       <div class="tip-row"><span class="tip-label">Fixed Charges</span><span class="tip-val">${fm(w.oc)}</span></div>
+       ${surcharge>0?'<div class="tip-row"><span class="tip-label">Surcharges</span><span class="tip-val" style="color:var(--red)">'+fm(surcharge)+'</span></div>':''}`},
+    {l:'Total Packages',v:fi(tp),d:fp(tp,ptp),
+     tip:`<h4>Packages</h4>
+       <div class="tip-row"><span class="tip-label">Pickup</span><span class="tip-val">${fi(w.pp)}</span></div>
+       <div class="tip-row"><span class="tip-label">Delivery</span><span class="tip-val">${fi(w.dp)}</span></div>
+       <div class="tip-row"><span class="tip-label">E-Commerce</span><span class="tip-val">${fi(w.ep)}</span></div>
+       <div class="tip-row"><span class="tip-label">Period Avg</span><span class="tip-val">${fi(Math.round(avgTP))}</span></div>`},
+    {l:'Rev / Route',v:'$'+revRoute.toFixed(0),d:fp(revRoute,prevRevRoute),
+     tip:`<h4>Revenue per Route by Contract</h4>${contractTipRows}
+       <div class="tip-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px"><span class="tip-label">Current DESIG</span><span class="tip-val">${w.desig}%</span></div>`},
+    {l:'Active Drivers',v:w.dc,d:fp(w.dc,p?.dc),
+     tip:`<h4>Workforce</h4>
+       <div class="tip-row"><span class="tip-label">Driver-Days</span><span class="tip-val">${dd}</span></div>
+       <div class="tip-row"><span class="tip-label">Avg Days/Driver</span><span class="tip-val">${(dd/w.dc).toFixed(1)}</span></div>`},
+    {l:'Surcharges',v:surcharge>0?fm(surcharge):'$0',d:{t:surcharge>0?'Active':'None',c:surcharge>0?'down':'flat'},
+     tip:`<h4>Surcharges This Week</h4>
+       <div class="tip-row"><span class="tip-label">Surge Stop</span><span class="tip-val">${fm(w.fs)}</span></div>
+       <div class="tip-row"><span class="tip-label">Peak Svc Charge</span><span class="tip-val">${fm(w.peak)}</span></div>
+       <div class="tip-row"><span class="tip-label">P&D Adjustments</span><span class="tip-val">${fm(w.adjn||0)}</span></div>
+       <div class="tip-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px"><span class="tip-label">Period Total Surge</span><span class="tip-val">${fm(totalSurge)}</span></div>
+       <div class="tip-row"><span class="tip-label">Peak Weeks in Range</span><span class="tip-val">${peakWeeks}</span></div>`}
+  ]:[
+    {l:'Active Drivers',v:w.dc,d:fp(w.dc,p?.dc),tip:''},
+    {l:'Driver-Days',v:dd,d:pdd?fp(dd,pdd):{t:'\u2014',c:'flat'},tip:''},
+    {l:'Avg Stops/Day',v:Math.round(w.ts/dd),d:pdd?fp(w.ts/dd,p.ts/pdd):{t:'\u2014',c:'flat'},tip:''},
+    {l:'Avg Pkgs/Day',v:fi(Math.round(tp/dd)),d:pdd?fp(tp/dd,ptp/pdd):{t:'\u2014',c:'flat'},tip:''},
+    {l:'Pkgs/Stop',v:(tp/w.ts).toFixed(1),d:ptp?fp(tp/w.ts,ptp/p.ts):{t:'\u2014',c:'flat'},tip:''}
+  ];
+  document.getElementById('kpiRow').innerHTML=kpis.map(k=>`
+    <div class="kpi"><div class="lbl">${k.l}</div><div class="val">${k.v}</div>
+    <div class="chg ${k.d.c}">${k.d.t}</div>
+    ${k.tip?'<div class="tip">'+k.tip+'</div>':''}</div>`).join('');
+}
+
+function renderAlert(w,p,range){
+  const a=document.getElementById('alert'),msgs=[];
+  if(w.fs>0) msgs.push('<strong>Surge Stop charges:</strong> '+fm(w.fs)+' this week');
+  if(w.peak>0) msgs.push('<strong>Peak Service Charge:</strong> '+fm(w.peak));
+  if(w.adjn>0) msgs.push('<strong>P&D charge adjustments:</strong> '+w.adj+' items totaling '+fm(w.adjn));
+  if(w.dbl>5) msgs.push('<strong>'+w.dbl+' double stops</strong>');
+  if(p&&w.ts<p.ts*.85) msgs.push('<strong>Volume drop:</strong> '+fi(w.ts)+' stops vs '+fi(p.ts)+' prior week');
+  if(w.cf>w.bf*1.1) msgs.push('<strong>Fuel premium</strong> $'+(w.cf-w.bf).toFixed(3)+' above base');
+  const dd_drv=w.drv.filter(d=>!['bulk','mgr'].includes(DRIVER_ROLES[d.id]||'')).map(d=>({name:d.name,spd:d.days>0?(d.ps+d.ds+d.es)/d.days:0}));
+  const avgSPD=dd_drv.reduce((s,d)=>s+d.spd,0)/dd_drv.length;
+  const overworked=dd_drv.filter(d=>d.spd>avgSPD*1.5&&d.spd>80).map(d=>d.name);
+  if(overworked.length) msgs.push('<strong>High intensity:</strong> '+overworked.join(', ')+' at 50%+ above avg stops/day');
+  // Contract change alert
+  if(p&&w.desig!==p.desig) msgs.push('<strong>Contract rate change:</strong> DESIG moved from '+p.desig+'% to '+w.desig+'%');
+  a.innerHTML=msgs.join('<br>');
+  a.style.display=msgs.length?'block':'none';
+}
+
+function destroyCharts(){Object.values(charts).forEach(c=>{if(c)c.destroy()});charts={}}
+
+function renderExec(range){
+  destroyCharts();
+  const labels=range.map(w=>w.we);
+
+  // Settlement — stacked bar with net line
+  charts.rev=new Chart(document.getElementById('cRev'),{type:'bar',data:{labels,datasets:[
+    {label:'P&D Revenue',data:range.map(w=>w.pd),backgroundColor:'rgba(37,99,235,0.6)',borderRadius:4,order:2},
+    {label:'Fixed Charges',data:range.map(w=>w.oc-w.adjn),backgroundColor:'rgba(220,38,38,0.25)',borderRadius:4,order:2},
+    {label:'Surcharges',data:range.map(w=>w.fs+w.peak+w.adjn),backgroundColor:'rgba(245,158,11,0.5)',borderRadius:4,order:2},
+    {label:'Net Due',data:range.map(w=>w.net),type:'line',borderColor:'#1a1a2e',borderWidth:2,pointRadius:4,pointBackgroundColor:'#1a1a2e',order:1}
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}},
+    tooltip:{callbacks:{label:ctx=>{const v=ctx.parsed.y;return ctx.dataset.label+': $'+v.toLocaleString(undefined,{minimumFractionDigits:0})}}}},
+    scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
+
+  // Revenue per Route with contract band colors
+  const routeData=range.map(w=>w.driver_days>0?w.pd/w.driver_days:0);
+  const barColors=range.map(w=>{const c=getContract(w.we);return c.color+'99'});
+  charts.route=new Chart(document.getElementById('cRoute'),{type:'bar',data:{labels,datasets:[
+    {label:'P&D Rev / Driver-Day',data:routeData,backgroundColor:barColors,borderRadius:4}
+  ]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
+    const w=range[ctx.dataIndex];const c=getContract(w.we);
+    return '$'+ctx.parsed.y.toFixed(0)+'/route ('+c.name+' · DESIG '+c.desig+'%)'}}}},
+    scales:{y:{ticks:{callback:v=>'$'+v.toFixed(0)},title:{display:true,text:'P&D Revenue per Driver-Day',font:{size:11}}}}}});
+
+  // Mix doughnut
+  const w=range[range.length-1];
+  const surchargeTotal=w.fs+w.peak+w.adjn;
+  charts.mix=new Chart(document.getElementById('cMix'),{type:'doughnut',data:{
+    labels:['P&D Variable','Service Charge','Large Package','Time Definite',surchargeTotal>0?'Surcharges':'Other Fixed'],
+    datasets:[{data:[w.pd,w.svc,w.lg,w.td,surchargeTotal>0?surchargeTotal:w.oc-w.svc-w.td-w.lg],
+      backgroundColor:['#2563eb','#dc2626','#f59e0b','#8b5cf6',surchargeTotal>0?'#ef4444':'#9ca3af'],borderWidth:0}]
+  },options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}},
+    tooltip:{callbacks:{label:ctx=>{const v=ctx.parsed;const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ctx.label+': $'+v.toLocaleString()+' ('+(v/t*100).toFixed(1)+'%)'}}}}}});
+
+  // Package Volume
+  charts.volPkg=new Chart(document.getElementById('cVolPkg'),{type:'bar',data:{labels,datasets:[
+    {label:'Pickup',data:range.map(w=>w.pp),backgroundColor:'#93c5fd',stack:'s'},
+    {label:'Delivery',data:range.map(w=>w.dp),backgroundColor:'#6366f1',stack:'s'},
+    {label:'E-Commerce',data:range.map(w=>w.ep),backgroundColor:'#34d399',stack:'s'}
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
+    scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>v.toLocaleString()},title:{display:true,text:'Packages',font:{size:11}}}}}});
+
+  // Stop Volume
+  charts.volStop=new Chart(document.getElementById('cVolStop'),{type:'bar',data:{labels,datasets:[
+    {label:'Pickup',data:range.map(w=>w.ps),backgroundColor:'#93c5fd',stack:'s'},
+    {label:'Delivery',data:range.map(w=>w.dss),backgroundColor:'#6366f1',stack:'s'},
+    {label:'E-Commerce',data:range.map(w=>w.es),backgroundColor:'#34d399',stack:'s'}
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
+    scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>v.toLocaleString()},title:{display:true,text:'Stops',font:{size:11}}}}}});
+
+  // NEW: Surcharges & Peak chart
+  charts.surcharge=new Chart(document.getElementById('cSurcharge'),{type:'bar',data:{labels,datasets:[
+    {label:'Surge Stop',data:range.map(w=>w.fs),backgroundColor:'rgba(220,38,38,0.5)',borderRadius:4,stack:'s'},
+    {label:'Peak Service',data:range.map(w=>w.peak),backgroundColor:'rgba(245,158,11,0.5)',borderRadius:4,stack:'s'},
+    {label:'P&D Adjustments',data:range.map(w=>w.adjn),backgroundColor:'rgba(139,92,246,0.4)',borderRadius:4,stack:'s'}
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}},
+    tooltip:{callbacks:{label:ctx=>'$'+ctx.parsed.y.toLocaleString(undefined,{minimumFractionDigits:0})}}},
+    scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'$'+v.toLocaleString()},title:{display:true,text:'Surcharges ($)',font:{size:11}}}}}});
+
+  // NEW: Contract Rate chart
+  charts.desig=new Chart(document.getElementById('cDesig'),{type:'line',data:{labels,datasets:[
+    {label:'DESIG %',data:range.map(w=>w.desig),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.08)',fill:true,tension:0,pointRadius:5,borderWidth:2.5,
+      pointBackgroundColor:range.map(w=>getContract(w.we).color)}
+  ]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
+    const w=range[ctx.dataIndex];const c=getContract(w.we);return c.name+': '+ctx.parsed.y.toFixed(2)+'%'}}}},
+    scales:{y:{title:{display:true,text:'Large Pkg DESIG %',font:{size:11}}}}}});
+
+  // Fuel
+  charts.fuel=new Chart(document.getElementById('cFuel'),{type:'line',data:{labels,datasets:[
+    {label:'Current',data:range.map(w=>w.cf),borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,0.08)',fill:true,tension:.3,pointRadius:3},
+    {label:'Base',data:range.map(w=>w.bf),borderColor:'#9ca3af',borderDash:[5,5],pointRadius:0}
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
+    scales:{y:{ticks:{callback:v=>'$'+v.toFixed(3)}}}}});
+
+  // Large Package
+  charts.largePkg=new Chart(document.getElementById('cLargePkg'),{type:'bar',data:{labels,datasets:[
+    {label:'Large Pkg Surcharge',data:range.map(w=>w.lg),backgroundColor:'rgba(245,158,11,0.5)',borderRadius:4}
+  ]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'$'+ctx.parsed.y.toLocaleString()}}},
+    scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString()},title:{display:true,text:'Large Package Surcharge ($)',font:{size:11}}}}}});
+
+  // Summary table
+  const tb=document.getElementById('execBody');
+  const st=sortState.exec;
+  let rows=range.map(w=>{
+    const tp=w.pp+w.dp+w.ep;
+    const dd=w.driver_days;
+    const c=getContract(w.we);
+    return{we:w.we,net:w.net,pd:w.pd,revRoute:dd>0?w.pd/dd:0,desig:w.desig,fixPct:w.oc/w.tc,
+      tp,ts:w.ts,dc:w.dc,dd,fs:w.fs,peak:w.peak,adjn:w.adjn,adj:w.adj,contract:c,isPeak:isPeak(w.we)};
+  });
+  rows.sort((a,b)=>{let va=a[st.col],vb=b[st.col];if(typeof va==='string'){va=va.toLowerCase();vb=vb.toLowerCase()}return st.dir==='asc'?(va>vb?1:-1):(va<vb?1:-1)});
+  tb.innerHTML=rows.map(r=>{
+    const peakBadge=r.isPeak?'<span class="flag flag-peak">Peak</span>':'';
+    const contractDot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${r.contract.color};margin-right:4px"></span>`;
+    return `<tr>
+      <td>${contractDot}${r.we}${peakBadge}</td><td class="num"><strong>${fm(r.net)}</strong></td><td class="num">${fm(r.pd)}</td>
+      <td class="num"><strong>$${r.revRoute.toFixed(0)}</strong></td>
+      <td class="num">${r.desig}%</td>
+      <td class="num">${(r.fixPct*100).toFixed(1)}%</td>
+      <td class="num">${fi(r.tp)}</td><td class="num">${fi(r.ts)}</td>
+      <td class="num">${r.dc}</td><td class="num">${r.dd}</td>
+      <td class="num">${r.fs>0?'<span class="flag flag-surge">$'+fi(Math.round(r.fs))+'</span>':'\u2014'}</td>
+      <td class="num">${r.peak>0?'<span class="flag flag-peak">$'+fi(Math.round(r.peak))+'</span>':'\u2014'}</td>
+      <td class="num">${r.adjn>0?'<span class="flag flag-adj">$'+fi(Math.round(r.adjn))+'</span>':'\u2014'}</td>
+    </tr>`;}).join('');
+  updateSortHeaders('execTable',st);
+
+  // Detail tables
+  document.getElementById('adjBody').innerHTML=range.map(r=>`<tr><td>${r.we}</td><td class="num">${r.adj}</td><td class="num">${fm(r.adjn)}</td><td style="font-size:11px;color:var(--gray)">${r.adjn>0?r.adj+' line items':'No adjustments'}</td></tr>`).join('');
+  document.getElementById('dblBody').innerHTML=range.map(r=>`<tr><td>${r.we}</td><td class="num">${r.dbl}</td><td class="num">${r.ns}</td><td class="num">${fi(r.ts)}</td><td class="num">${r.ts>0?(r.dbl/r.ts*100).toFixed(2):'0.00'}%</td></tr>`).join('');
+}
+
+function renderOps(range){
+  destroyCharts();
+  const labels=range.map(w=>w.we);
+  const rangeLabel=document.getElementById('range').selectedOptions[0].text;
+  ['opsRange','opsRange2','opsChartRange','revLeaderRange'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.textContent=rangeLabel;
+  });
+
+  const drvAgg={};
+  range.forEach((w,wi)=>{
+    w.drv.forEach(d=>{
+      if(!drvAgg[d.id]) drvAgg[d.id]={name:d.name,weeks:0,ps:0,pp:0,ds:0,dp:0,es:0,ep:0,days:0,history:[]};
+      const a=drvAgg[d.id];
+      a.weeks++;a.ps+=d.ps;a.pp+=d.pp;a.ds+=d.ds;a.dp+=d.dp;a.es+=d.es;a.ep+=d.ep;a.days+=d.days;
+      a.history.push({we:w.we,ts:d.ps+d.ds+d.es,tp:d.pp+d.dp+d.ep});
+    });
+  });
+
+  const drivers=Object.entries(drvAgg).map(([id,a])=>{
+    const ts=a.ps+a.ds+a.es,tp=a.pp+a.dp+a.ep,wk=a.weeks;
+    const avgS=ts/wk,avgP=tp/wk,avgD=a.days/wk;
+    const pps=ts>0?tp/ts:0,spd=a.days>0?ts/a.days:0,ppd=a.days>0?tp/a.days:0;
+    const rawIntensity=spd*0.6+ppd*0.4;
+    const ecPct=ts>0?a.es/ts:0,puPct=ts>0?a.ps/ts:0,delPct=ts>0?a.ds/ts:0;
+    const knownRole=DRIVER_ROLES[id];
+    let role;
+    if(knownRole)role=knownRole;
+    else if(pps>=2.5)role='heavy';
+    else if(ecPct>.6)role='ec';
+    else if(puPct>.2&&delPct>.2)role='mix';
+    else if(pps<1.5&&avgS>200)role='route';
+    else if(delPct>.4)role='del';
+    else role='ec';
+    const h=a.history;
+    let trend=0;
+    if(h.length>=2)trend=((h[h.length-1].ts-h[0].ts)/h[0].ts)*100;
+    return{id,name:a.name,weeks:wk,tot_s:Math.round(avgS),tot_p:Math.round(avgP),pps:Math.round(pps*10)/10,
+      days:Math.round(avgD*10)/10,spd:Math.round(spd),ppd:Math.round(ppd),
+      ps:Math.round(a.ps/wk),ds:Math.round(a.ds/wk),es:Math.round(a.es/wk),
+      pp_avg:Math.round(a.pp/wk),dp_avg:Math.round(a.dp/wk),ep_avg:Math.round(a.ep/wk),
+      role,trend:Math.round(trend),ecPct,raw_days:a.days,raw_pkgs:tp,raw_stops:ts,
+      intensity:Math.round(rawIntensity),stopShare:ts};
+  });
+
+  const routeDrivers=drivers.filter(d=>!['bulk','mgr'].includes(d.role));
+  const maxIntensity=Math.max(...routeDrivers.map(d=>d.intensity),1);
+  drivers.forEach(d=>{d.intensityNorm=Math.round(d.intensity/maxIntensity*100)});
+
+  const roleLabels={ec:'E-Commerce',mix:'Balanced',del:'Delivery',heavy:'Heavy Load',route:'Route Runner',bulk:'Bulk/Dock',mgr:'Manager'};
+  const roleColors={ec:'#059669',mix:'#2563eb',del:'#7c3aed',heavy:'#d97706',route:'#8b5cf6',bulk:'#a855f7',mgr:'#0ea5e9'};
+
+  // Intensity scatter
+  const scatterData=drivers.filter(d=>d.days>0&&d.tot_s>30).map(d=>({x:d.spd,y:d.ppd,name:d.name,role:d.role,intensity:d.intensityNorm}));
+  charts.intensity=new Chart(document.getElementById('cIntensity'),{type:'scatter',data:{
+    datasets:[{data:scatterData.map(d=>({x:d.x,y:d.y})),
+      backgroundColor:scatterData.map(d=>roleColors[d.role]||'#6b7280'),
+      pointRadius:scatterData.map(d=>5+d.intensity/12),pointHoverRadius:12}]
+  },options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{
+    label:ctx=>{const d=scatterData[ctx.dataIndex];return d.name+' ['+roleLabels[d.role]+']: '+d.x+' stops/day, '+d.y+' pkgs/day'}}}},
+    scales:{x:{title:{display:true,text:'Stops / Day',font:{size:11}}},y:{title:{display:true,text:'Packages / Day',font:{size:11}}}}}});
+
+  // PPS
+  charts.pps=new Chart(document.getElementById('cPPS'),{type:'line',data:{labels,datasets:[
+    {label:'Pickup',data:range.map(w=>w.ps>0?w.pp/w.ps:0),borderColor:'#93c5fd',borderWidth:2.5,tension:.3,pointRadius:4},
+    {label:'Delivery',data:range.map(w=>w.dss>0?w.dp/w.dss:0),borderColor:'#6366f1',borderWidth:2.5,tension:.3,pointRadius:4},
+    {label:'E-Commerce',data:range.map(w=>w.es>0?w.ep/w.es:0),borderColor:'#34d399',borderWidth:2.5,tension:.3,pointRadius:4}
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}}},
+    scales:{y:{beginAtZero:true,title:{display:true,text:'Packages per Stop',font:{size:11}},ticks:{callback:v=>v.toFixed(1)}}}}});
+
+  // Driver table
+  const activeDrvs=drivers.filter(d=>d.days>0&&d.tot_s>30&&!['bulk','mgr'].includes(d.role));
+  const teamAvgIntensity=activeDrvs.length>0?activeDrvs.reduce((s,d)=>s+d.intensity,0)/activeDrvs.length:1;
+  const teamAvgStops=activeDrvs.length>0?activeDrvs.reduce((s,d)=>s+d.tot_s,0)/activeDrvs.length:1;
+  const st=sortState.ops;
+  drivers.sort((a,b)=>{let va=a[st.col],vb=b[st.col];if(typeof va==='string'){va=va.toLowerCase();vb=vb.toLowerCase()}return st.dir==='asc'?(va>vb?1:-1):(va<vb?1:-1)});
+  const maxS=Math.max(...drivers.map(d=>d.tot_s),1);
+  document.getElementById('opsBody').innerHTML=drivers.map(d=>{
+    const puW=Math.round(d.ps/maxS*120),delW=Math.round(d.ds/maxS*120),ecW=Math.round(d.es/maxS*120);
+    let flags='';
+    if(d.role==='bulk')flags+='<span class="flag flag-bulk">Bulk</span>';
+    else if(d.role==='mgr')flags+='<span class="flag flag-mgr">Mgr</span>';
+    else{
+      if(d.intensity>teamAvgIntensity*1.4&&d.tot_s>30)flags+='<span class="flag flag-high">High</span>';
+      if(d.intensity<teamAvgIntensity*.5&&d.tot_s>30&&d.weeks>1)flags+='<span class="flag flag-low">Low</span>';
+    }
+    if(d.weeks>=2&&d.weeks<=3&&d.tot_s<teamAvgStops*0.7&&!['bulk','mgr'].includes(d.role))flags+='<span class="flag flag-ramp">Ramping</span>';
+    if(d.weeks===1)flags+='<span class="flag flag-new">New</span>';
+    const trendArrow=d.trend>15?'<span class="up">\u25B2'+d.trend+'%</span>':d.trend<-15?'<span class="down">\u25BC'+Math.abs(d.trend)+'%</span>':'<span class="flat">\u2014</span>';
+    return `<tr>
+      <td><strong>${d.name}</strong>${flags}</td><td class="num"><strong>${d.intensityNorm}</strong></td>
+      <td class="num">${d.spd}</td><td class="num">${fi(d.ppd)}</td>
+      <td class="num">${fi(d.tot_s)}</td><td class="num">${fi(d.tot_p)}</td>
+      <td class="num">${d.pps.toFixed(1)}</td><td class="num">${d.days.toFixed(1)}</td>
+      <td><div class="bar-cell"><div class="bar-seg bar-pu" style="width:${puW}px"></div><div class="bar-seg bar-del" style="width:${delW}px"></div><div class="bar-seg bar-ec" style="width:${ecW}px"></div></div></td>
+      <td><span class="tag tag-${d.role}">${roleLabels[d.role]||d.role}</span></td>
+      <td class="num">${trendArrow}</td></tr>`;
+  }).join('');
+  updateSortHeaders('opsTable',st);
+
+  // Revenue Leaders
+  const totalStopsRange=range.reduce((s,w)=>s+w.ts,0);
+  const totalPDRange=range.reduce((s,w)=>s+w.pd,0);
+  const revenueDrivers=drivers.filter(d=>d.raw_stops>0).map(d=>{
+    const revShare=(d.raw_stops/totalStopsRange)*totalPDRange;
+    const totalDriverStops=d.raw_stops;
+    return{name:d.name,rev:revShare,
+      puRev:Math.round(totalDriverStops>0?(d.ps*d.weeks/totalDriverStops)*revShare:0),
+      delRev:Math.round(totalDriverStops>0?(d.ds*d.weeks/totalDriverStops)*revShare:0),
+      ecRev:Math.round(totalDriverStops>0?(d.es*d.weeks/totalDriverStops)*revShare:0),role:d.role};
+  }).sort((a,b)=>b.rev-a.rev);
+  charts.revLeaders=new Chart(document.getElementById('cRevLeaders'),{type:'bar',data:{
+    labels:revenueDrivers.map(d=>d.name.split(' ')[1]),
+    datasets:[
+      {label:'Pickup',data:revenueDrivers.map(d=>d.puRev),backgroundColor:'#93c5fd'},
+      {label:'Delivery',data:revenueDrivers.map(d=>d.delRev),backgroundColor:'#6366f1'},
+      {label:'E-Commerce',data:revenueDrivers.map(d=>d.ecRev),backgroundColor:'#34d399'}
+    ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}}},
+    scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
+
+  // Driver comparison
+  const chartDrv=drivers.filter(d=>d.ppd>0).sort((a,b)=>b.ppd-a.ppd);
+  charts.drv=new Chart(document.getElementById('cDrivers'),{type:'bar',data:{
+    labels:chartDrv.map(d=>d.name.split(' ')[1]),
+    datasets:[
+      {label:'PU Pkgs/Wk',data:chartDrv.map(d=>d.pp_avg),backgroundColor:'#93c5fd'},
+      {label:'Del Pkgs/Wk',data:chartDrv.map(d=>d.dp_avg),backgroundColor:'#6366f1'},
+      {label:'Ecom Pkgs/Wk',data:chartDrv.map(d=>d.ep_avg),backgroundColor:'#34d399'}
+    ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}}},
+    scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>v.toLocaleString()}}}}});
+}
+
+function updateSortHeaders(tableId,st){
+  document.querySelectorAll('#'+tableId+' th').forEach(th=>{
+    th.classList.remove('asc','desc');
+    if(th.dataset.c===st.col)th.classList.add(st.dir);
+  });
+}
+
+document.querySelectorAll('#execTable th, #opsTable th').forEach(th=>{
+  th.addEventListener('click',()=>{
+    const c=th.dataset.c;if(!c||c==='mix')return;
+    const tbl=th.closest('table').id.includes('exec')?'exec':'ops';
+    const s=sortState[tbl];
+    if(s.col===c)s.dir=s.dir==='desc'?'asc':'desc';
+    else{s.col=c;s.dir='desc'}
+    render();
+  });
+});
+
+render();
+})();
+</script>
+</body>
+</html>
