@@ -93,6 +93,7 @@ tr:hover{background:#f8fafc}
     <div class="sub">ISP C8882435 &bull; Station 00265 Morgantown &bull; CSA 303475 &bull; <span id="contractInfo"></span></div>
   </div>
   <div class="controls">
+    <a href="index.html" style="padding:7px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;text-decoration:none;color:var(--dark);font-weight:600;cursor:pointer">&#8962; Home</a>
     <div class="view-toggle">
       <button id="btnExec" class="active" onclick="setView('exec')">Executive</button>
       <button id="btnOps" onclick="setView('ops')">Operations</button>
@@ -681,6 +682,11 @@ document.querySelectorAll('#execTable th, #opsTable th').forEach(th=>{
     render();
   });
 });
+
+// Expose functions to global scope for HTML onclick/onchange handlers
+window.setView = setView;
+window.onRangeChange = onRangeChange;
+window.render = render;
 
 render();
 })();
