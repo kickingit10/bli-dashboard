@@ -49,9 +49,9 @@ header{display:flex;justify-content:space-between;align-items:flex-start;margin-
 
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
-.card{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card{background:#fff;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .card h3{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--dark)}
-.card canvas{max-height:280px}
+.card canvas{max-height:320px}
 .card-full{grid-column:1/-1}
 
 table{width:100%;border-collapse:collapse;font-size:12px}
@@ -81,14 +81,25 @@ tr:hover{background:#f8fafc}
 .surcharge-bar{height:24px;border-radius:4px;display:flex;overflow:hidden;margin:4px 0}
 .surcharge-bar div{height:100%;min-width:2px}
 
+/* DOW heat cells */
+.dow-heat{text-align:center;font-weight:600;font-size:12px;padding:8px 4px;border-radius:4px}
+.dow-summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
+.dow-card{background:#f8fafc;border-radius:8px;padding:12px;text-align:center}
+.dow-card .dow-label{font-size:11px;font-weight:600;color:var(--gray);text-transform:uppercase}
+.dow-card .dow-val{font-size:20px;font-weight:700;margin:4px 0}
+.dow-card .dow-sub{font-size:11px;color:var(--gray)}
+
 /* Mobile responsive */
 @media(max-width:900px){
   .grid-2,.grid-3{grid-template-columns:1fr}
   .kpi-row{grid-template-columns:repeat(3,1fr)}
   .dash{padding:12px}
   header{flex-direction:column;gap:8px}
-  .controls{width:100%;justify-content:flex-start}
-  .card canvas{max-height:220px}
+  .controls{width:100%;justify-content:flex-start;flex-wrap:wrap}
+  .card canvas{max-height:260px}
+  .card{padding:14px}
+  .view-toggle{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .view-toggle button{white-space:nowrap;padding:8px 14px;font-size:12px}
 }
 @media(max-width:600px){
   .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px}
@@ -99,16 +110,18 @@ tr:hover{background:#f8fafc}
   .header-left .sub{font-size:10px}
   .controls{flex-wrap:wrap;gap:6px}
   .controls select,.controls button,.controls input[type=date]{padding:6px 10px;font-size:12px}
-  .view-toggle button{padding:6px 12px;font-size:12px}
+  .view-toggle button{padding:6px 10px;font-size:11px}
   .date-controls{flex-wrap:wrap}
   .card{padding:12px}
   .card h3{font-size:13px}
+  .card canvas{max-height:220px}
   table{font-size:11px;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
   th{padding:6px 4px;font-size:10px}
   td{padding:5px 4px}
   .flag{font-size:9px;padding:1px 4px;margin-left:3px}
   .tag{font-size:9px;padding:1px 6px}
   .alert{font-size:12px;padding:10px 14px}
+  .dow-summary{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 </head>
@@ -126,11 +139,13 @@ tr:hover{background:#f8fafc}
       <button id="btnExec" class="active" onclick="setView('exec')">Executive</button>
       <button id="btnOps" onclick="setView('ops')">Operations</button>
       <button id="btnTrends" onclick="setView('trends')">Trends</button>
+      <button id="btnDaily" onclick="setView('daily')">Daily</button>
     </div>
     <select id="range" onchange="onRangeChange()">
       <option value="4">Last 4 Weeks</option>
       <option value="8">Last 8 Weeks</option>
       <option value="13">Last 13 Weeks</option>
+      <option value="1">Last Week</option>
       <option value="0" selected>All Data</option>
       <option value="ytd">YTD</option>
       <option value="custom">Custom Range</option>
@@ -160,7 +175,7 @@ tr:hover{background:#f8fafc}
   </div>
   <div class="grid-2">
     <div class="card"><h3>How Much Are Surcharges Costing?</h3><canvas id="cSurcharge"></canvas></div>
-    <div class="card"><h3>How Has the Contract Rate Changed?</h3><canvas id="cDesig"></canvas></div>
+    <div class="card"><h3>How Has the LP Rate Changed?</h3><canvas id="cDesig"></canvas></div>
   </div>
   <div class="grid-2">
     <div class="card"><h3>Fuel: Current vs Base Rate</h3><canvas id="cFuel"></canvas></div>
@@ -174,7 +189,7 @@ tr:hover{background:#f8fafc}
     <table id="execTable">
       <thead><tr>
         <th data-c="we">Week</th><th data-c="net">Net Settlement</th><th data-c="pd">P&D Rev</th>
-        <th data-c="revRoute">Net/Route</th><th data-c="desig">DESIG %</th><th data-c="fixPct">Fixed %</th>
+        <th data-c="revRoute">Net/Route</th><th data-c="desig">LP %</th><th data-c="fixPct">Fixed %</th>
         <th data-c="tp">Total Pkgs</th><th data-c="ts">Total Stops</th>
         <th data-c="dc">Drivers</th><th data-c="dd">Driver-Days</th>
         <th data-c="fs">Surge</th><th data-c="peak">Peak</th>
@@ -246,6 +261,7 @@ tr:hover{background:#f8fafc}
   </div>
 </div>
 
+<!-- TRENDS VIEW -->
 <div id="trendsView" class="section">
   <div class="grid-2">
     <div class="card">
@@ -273,9 +289,50 @@ tr:hover{background:#f8fafc}
     <table id="trendTable">
       <thead><tr>
         <th>Period</th><th>Weeks</th><th>Avg Net</th><th>Avg Net/Route</th>
-        <th>Avg Pkgs</th><th>Avg Stops</th><th>Avg Drivers</th><th>DESIG</th><th>Avg Surcharges</th>
+        <th>Avg Pkgs</th><th>Avg Stops</th><th>Avg Drivers</th><th>LP %</th><th>Avg Surcharges</th>
       </tr></thead>
       <tbody id="trendBody"></tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- DAILY VIEW (Day-of-Week Analysis) -->
+<div id="dailyView" class="section">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Stops by Day of Week</h3>
+      <canvas id="cDowStops"></canvas>
+    </div>
+    <div class="card">
+      <h3>Packages by Day of Week</h3>
+      <canvas id="cDowPkgs"></canvas>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <h3>E-Commerce % by Day</h3>
+      <canvas id="cDowEc"></canvas>
+    </div>
+    <div class="card">
+      <h3>Daily Volume Trend</h3>
+      <canvas id="cDailyTrend"></canvas>
+    </div>
+  </div>
+  <div class="card card-full" style="margin-bottom:16px">
+    <h3>Day-of-Week Averages <span style="font-size:11px;font-weight:400;color:var(--gray)">(for staffing & reroute planning)</span></h3>
+    <div id="dowSummary"></div>
+  </div>
+  <div class="card card-full" style="margin-bottom:16px">
+    <h3>Daily Detail Table</h3>
+    <div style="overflow-x:auto">
+    <table id="dailyTable">
+      <thead><tr>
+        <th>Date</th><th>Day</th><th>Del Stops</th><th>Del Pkgs</th>
+        <th>PU Stops</th><th>PU Pkgs</th><th>Total Stops</th>
+        <th>E-Com Stops</th><th>E-Com Pkgs</th><th>LP %</th><th>LP $</th>
+      </tr></thead>
+      <tbody id="dailyBody"></tbody>
     </table>
     </div>
   </div>
@@ -296,7 +353,7 @@ let D, CONTRACTS, DRIVER_ROLES;
     CONTRACTS = json.contracts;
     DRIVER_ROLES = json.driverRoles;
   } catch(e) {
-    document.querySelector('.dash').innerHTML = 
+    document.querySelector('.dash').innerHTML =
       '<div style="text-align:center;padding:60px;color:#dc2626">' +
       '<h2>Error Loading Data</h2>' +
       '<p>Could not load data.json &mdash; ' + e.message + '</p></div>';
@@ -378,7 +435,7 @@ function getPrev(range){return range.length>1?range[range.length-2]:null}
 
 function setView(v){
   view=v;
-  ['exec','ops','trends'].forEach(t=>{
+  ['exec','ops','trends','daily'].forEach(t=>{
     document.getElementById('btn'+t.charAt(0).toUpperCase()+t.slice(1)).className=v===t?'active':'';
     document.getElementById(t+'View').className='section'+(v===t?' active':'');
   });
@@ -397,13 +454,14 @@ function render(){
   if(view==='exec') renderExec(range,cur);
   else if(view==='ops') renderOps(range);
   else if(view==='trends') renderTrends(range);
+  else if(view==='daily') renderDaily(range);
 }
 
 function updateContractInfo(w){
   const c=getContract(w.we);
   const peakStr=isPeak(w.we)?'<span class="peak-badge">PEAK SEASON</span>':'';
   document.getElementById('contractInfo').innerHTML=
-    `<span class="contract-badge" style="background:${c.color}20;color:${c.color}">${c.name} (DESIG ${c.desig}%)</span>${peakStr}`;
+    `<span class="contract-badge" style="background:${c.color}20;color:${c.color}">${c.name} (LP ${c.desig}%)</span>${peakStr}`;
 }
 
 function renderKPIs(w,p,range){
@@ -432,7 +490,7 @@ function renderKPIs(w,p,range){
   const totalSurge=range.reduce((s,r)=>s+r.fs+r.peak,0);
   const peakWeeks=range.filter(r=>isPeak(r.we)).length;
 
-  const kpis=view==='exec'?[
+  const kpis=view==='exec'||view==='daily'?[
     {l:'Net Settlement',v:fm(w.net),d:fp(w.net,p?.net),
      tip:`<h4>Settlement</h4>
        <div class="tip-row"><span class="tip-label">Period Avg</span><span class="tip-val">${fm(avgNet)}</span></div>
@@ -447,7 +505,7 @@ function renderKPIs(w,p,range){
        <div class="tip-row"><span class="tip-label">Period Avg</span><span class="tip-val">${fi(Math.round(avgTP))}</span></div>`},
     {l:'Net / Route',v:'$'+revRoute.toFixed(0),d:fp(revRoute,prevRevRoute),
      tip:`<h4>Net per Route by Contract</h4>${contractTipRows}
-       <div class="tip-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px"><span class="tip-label">Current DESIG</span><span class="tip-val">${w.desig}%</span></div>`},
+       <div class="tip-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px"><span class="tip-label">Current LP</span><span class="tip-val">${w.desig}%</span></div>`},
     {l:'Active Drivers',v:w.dc,d:fp(w.dc,p?.dc),
      tip:`<h4>Workforce</h4>
        <div class="tip-row"><span class="tip-label">Driver-Days</span><span class="tip-val">${dd}</span></div>
@@ -485,7 +543,7 @@ function renderAlert(w,p,range){
   const overworked=dd_drv.filter(d=>d.spd>avgSPD*1.4).map(d=>d.name);
   if(overworked.length) msgs.push('<strong>Overworked:</strong> '+overworked.join(', ')+' at 40%+ above team avg stops/day');
   // Contract change alert
-  if(p&&w.desig!==p.desig) msgs.push('<strong>Contract rate change:</strong> DESIG moved from '+p.desig+'% to '+w.desig+'%');
+  if(p&&w.desig!==p.desig) msgs.push('<strong>Contract rate change:</strong> LP moved from '+p.desig+'% to '+w.desig+'%');
   a.innerHTML=msgs.join('<br>');
   a.style.display=msgs.length?'block':'none';
 }
@@ -496,25 +554,35 @@ function renderExec(range){
   destroyCharts();
   const labels=range.map(w=>w.we);
 
-  // Settlement — stacked bar with net line
+  // Settlement — stacked bar with net line (FIX: use separate y-axis for net line)
+  const pdData=range.map(w=>w.pd);
+  const fixedData=range.map(w=>Math.max(0,w.oc-w.adjn));
+  const surchargeData=range.map(w=>w.fs+w.peak+w.adjn);
+  const netData=range.map(w=>w.net);
   charts.rev=new Chart(document.getElementById('cRev'),{type:'bar',data:{labels,datasets:[
-    {label:'P&D Revenue',data:range.map(w=>w.pd),backgroundColor:'rgba(37,99,235,0.6)',borderRadius:4,order:2},
-    {label:'Fixed Charges',data:range.map(w=>Math.max(0,w.oc-w.adjn)),backgroundColor:'rgba(220,38,38,0.25)',borderRadius:4,order:2},
-    {label:'Surcharges',data:range.map(w=>w.fs+w.peak+w.adjn),backgroundColor:'rgba(245,158,11,0.5)',borderRadius:4,order:2},
-    {label:'Net Due',data:range.map(w=>w.net),type:'line',borderColor:'#1a1a2e',borderWidth:2,pointRadius:4,pointBackgroundColor:'#1a1a2e',order:1}
-  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}},
+    {label:'P&D Revenue',data:pdData,backgroundColor:'rgba(37,99,235,0.6)',borderRadius:4,order:2,yAxisID:'y'},
+    {label:'Fixed Charges',data:fixedData,backgroundColor:'rgba(220,38,38,0.25)',borderRadius:4,order:2,yAxisID:'y'},
+    {label:'Surcharges',data:surchargeData,backgroundColor:'rgba(245,158,11,0.5)',borderRadius:4,order:2,yAxisID:'y'},
+    {label:'Net Due',data:netData,type:'line',borderColor:'#1a1a2e',borderWidth:2,pointRadius:4,pointBackgroundColor:'#1a1a2e',order:1,yAxisID:'y1'}
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}},
     tooltip:{callbacks:{label:ctx=>{const v=ctx.parsed.y;return ctx.dataset.label+': $'+v.toLocaleString(undefined,{minimumFractionDigits:0})}}}},
-    scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
+    scales:{x:{stacked:true},
+      y:{stacked:true,ticks:{callback:v=>'$'+v.toLocaleString()},title:{display:true,text:'Revenue Components',font:{size:10}}},
+      y1:{position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>'$'+v.toLocaleString()},title:{display:true,text:'Net Settlement',font:{size:10}}}
+    }}});
 
   // Net per Route with contract band colors
   const routeData=range.map(w=>w.driver_days>0?w.net/w.driver_days:0);
   const barColors=range.map(w=>{const c=getContract(w.we);return c.color+'99'});
+  const routeMin=Math.min(...routeData)*0.9;
   charts.route=new Chart(document.getElementById('cRoute'),{type:'bar',data:{labels,datasets:[
     {label:'Net / Driver-Day',data:routeData,backgroundColor:barColors,borderRadius:4}
-  ]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
     const w=range[ctx.dataIndex];const c=getContract(w.we);
-    return '$'+ctx.parsed.y.toFixed(0)+'/route ('+c.name+' · DESIG '+c.desig+'%)'}}}},
-    scales:{y:{ticks:{callback:v=>'$'+v.toFixed(0)},title:{display:true,text:'Net Settlement per Driver-Day',font:{size:11}}}}}});
+    return '$'+ctx.parsed.y.toFixed(0)+'/route ('+c.name+' \u00b7 LP '+c.desig+'%)'}}}},
+    scales:{y:{min:Math.max(0,Math.floor(routeMin/50)*50),ticks:{callback:v=>'$'+v.toFixed(0)},title:{display:true,text:'Net Settlement per Driver-Day',font:{size:11}}}}}});
 
   // Mix doughnut — range average
   const n=range.length;
@@ -536,7 +604,8 @@ function renderExec(range){
     {label:'Pickup',data:range.map(w=>w.pp),backgroundColor:'#86efac',stack:'s'},
     {label:'Delivery',data:range.map(w=>w.dp),backgroundColor:'#22c55e',stack:'s'},
     {label:'E-Commerce',data:range.map(w=>w.ep),backgroundColor:'#15803d',stack:'s'}
-  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
     scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>v.toLocaleString()},title:{display:true,text:'Packages',font:{size:11}}}}}});
 
   // Stop Volume — purple family
@@ -544,38 +613,48 @@ function renderExec(range){
     {label:'Pickup',data:range.map(w=>w.ps),backgroundColor:'#c4b5fd',stack:'s'},
     {label:'Delivery',data:range.map(w=>w.dss),backgroundColor:'#8b5cf6',stack:'s'},
     {label:'E-Commerce',data:range.map(w=>w.es),backgroundColor:'#6d28d9',stack:'s'}
-  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
     scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>v.toLocaleString()},title:{display:true,text:'Stops',font:{size:11}}}}}});
 
-  // NEW: Surcharges & Peak chart
+  // Surcharges & Peak chart
   charts.surcharge=new Chart(document.getElementById('cSurcharge'),{type:'bar',data:{labels,datasets:[
     {label:'Surge Stop',data:range.map(w=>w.fs),backgroundColor:'rgba(220,38,38,0.5)',borderRadius:4,stack:'s'},
     {label:'Peak Service',data:range.map(w=>w.peak),backgroundColor:'rgba(245,158,11,0.5)',borderRadius:4,stack:'s'},
     {label:'P&D Adjustments',data:range.map(w=>w.adjn),backgroundColor:'rgba(139,92,246,0.4)',borderRadius:4,stack:'s'}
-  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}},
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}},
     tooltip:{callbacks:{label:ctx=>'$'+ctx.parsed.y.toLocaleString(undefined,{minimumFractionDigits:0})}}},
-    scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'$'+v.toLocaleString()},title:{display:true,text:'Surcharges ($)',font:{size:11}}}}}});
+    scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{callback:v=>'$'+v.toLocaleString()},title:{display:true,text:'Surcharges ($)',font:{size:11}}}}}});
 
-  // NEW: Contract Rate chart
+  // LP Rate chart (renamed from DESIG)
+  const desigData=range.map(w=>w.desig);
+  const desigMin=Math.min(...desigData);
+  const desigMax=Math.max(...desigData);
+  const desigPad=(desigMax-desigMin)*0.3||0.5;
   charts.desig=new Chart(document.getElementById('cDesig'),{type:'line',data:{labels,datasets:[
-    {label:'DESIG %',data:range.map(w=>w.desig),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.08)',fill:true,stepped:'before',pointRadius:5,borderWidth:2.5,
+    {label:'LP %',data:desigData,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.08)',fill:true,stepped:'before',pointRadius:5,borderWidth:2.5,
       pointBackgroundColor:range.map(w=>getContract(w.we).color)}
-  ]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
     const w=range[ctx.dataIndex];const c=getContract(w.we);return c.name+': '+ctx.parsed.y.toFixed(2)+'%'}}}},
-    scales:{y:{title:{display:true,text:'Large Pkg DESIG %',font:{size:11}}}}}});
+    scales:{y:{min:Math.max(0,Math.floor((desigMin-desigPad)*10)/10),max:Math.ceil((desigMax+desigPad)*10)/10,
+      title:{display:true,text:'Large Package (LP) %',font:{size:11}}}}}});
 
   // Fuel
   charts.fuel=new Chart(document.getElementById('cFuel'),{type:'line',data:{labels,datasets:[
     {label:'Current',data:range.map(w=>w.cf),borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,0.08)',fill:true,tension:.3,pointRadius:3},
     {label:'Base',data:range.map(w=>w.bf),borderColor:'#9ca3af',borderDash:[5,5],pointRadius:0}
-  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
     scales:{y:{ticks:{callback:v=>'$'+v.toFixed(3)}}}}});
 
   // Large Package
   charts.largePkg=new Chart(document.getElementById('cLargePkg'),{type:'bar',data:{labels,datasets:[
     {label:'Large Pkg Surcharge',data:range.map(w=>w.lg),backgroundColor:'rgba(245,158,11,0.5)',borderRadius:4}
-  ]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'$'+ctx.parsed.y.toLocaleString()}}},
-    scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString()},title:{display:true,text:'Large Package Surcharge ($)',font:{size:11}}}}}});
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'$'+ctx.parsed.y.toLocaleString()}}},
+    scales:{y:{beginAtZero:true,ticks:{callback:v=>'$'+v.toLocaleString()},title:{display:true,text:'Large Package Surcharge ($)',font:{size:11}}}}}});
 
   // Summary table
   const tb=document.getElementById('execBody');
@@ -587,7 +666,7 @@ function renderExec(range){
     return{we:w.we,net:w.net,pd:w.pd,revRoute:dd>0?w.net/dd:0,desig:w.desig,fixPct:w.oc/w.tc,
       tp,ts:w.ts,dc:w.dc,dd,fs:w.fs,peak:w.peak,adjn:w.adjn,adj:w.adj,contract:c,isPeak:isPeak(w.we)};
   });
-  rows.sort((a,b)=>{let va=a[st.col],vb=b[st.col];if(typeof va==='string'){va=va.toLowerCase();vb=vb.toLowerCase()}return st.dir==='asc'?(va>vb?1:-1):(va<vb?1:-1)});
+  rows.sort((a,b)=>{let va=a[st.col],vb=b[st.col];if(st.col==='we'){va=parseWE(va).getTime();vb=parseWE(vb).getTime()}else if(typeof va==='string'){va=va.toLowerCase();vb=vb.toLowerCase()}return st.dir==='asc'?(va>vb?1:-1):(va<vb?1:-1)});
   tb.innerHTML=rows.map(r=>{
     const peakBadge=r.isPeak?'<span class="flag flag-peak">Peak</span>':'';
     const contractDot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${r.contract.color};margin-right:4px"></span>`;
@@ -669,8 +748,9 @@ function renderOps(range){
     datasets:[{data:scatterData.map(d=>({x:d.x,y:d.y})),
       backgroundColor:scatterData.map(d=>zoneColor(d.intensity)),
       pointRadius:scatterData.map(d=>Math.max(6,Math.min(14,d.intensity/10))),pointHoverRadius:14}]
-  },options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{
-    label:ctx=>{const d=scatterData[ctx.dataIndex];return d.name+': '+d.x+' stops/day, '+d.y+' pkgs/day — Score '+d.intensity+' ('+zoneLabel(d.intensity)+')'}}}},
+  },options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{display:false},tooltip:{callbacks:{
+    label:ctx=>{const d=scatterData[ctx.dataIndex];return d.name+': '+d.x+' stops/day, '+d.y+' pkgs/day \u2014 Score '+d.intensity+' ('+zoneLabel(d.intensity)+')'}}}},
     scales:{x:{title:{display:true,text:'Stops / Day (team avg: '+Math.round(teamAvgSPD)+')',font:{size:11}}},y:{title:{display:true,text:'Packages / Day',font:{size:11}}}}}});
 
   // PPS
@@ -678,10 +758,11 @@ function renderOps(range){
     {label:'Pickup',data:range.map(w=>w.ps>0?w.pp/w.ps:0),borderColor:'#86efac',borderWidth:2.5,tension:.3,pointRadius:4},
     {label:'Delivery',data:range.map(w=>w.dss>0?w.dp/w.dss:0),borderColor:'#22c55e',borderWidth:2.5,tension:.3,pointRadius:4},
     {label:'E-Commerce',data:range.map(w=>w.es>0?w.ep/w.es:0),borderColor:'#15803d',borderWidth:2.5,tension:.3,pointRadius:4}
-  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}}},
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}}},
     scales:{y:{beginAtZero:true,title:{display:true,text:'Packages per Stop',font:{size:11}},ticks:{callback:v=>v.toFixed(1)}}}}});
 
-  // Driver table — using zone-based workload scores
+  // Driver table — improved colors for workload zones
   const teamAvgStops=routeDrivers.length>0?routeDrivers.reduce((s,d)=>s+d.tot_s,0)/routeDrivers.length:1;
   const st=sortState.ops;
   drivers.sort((a,b)=>{let va=a[st.col],vb=b[st.col];if(typeof va==='string'){va=va.toLowerCase();vb=vb.toLowerCase()}return st.dir==='asc'?(va>vb?1:-1):(va<vb?1:-1)});
@@ -699,8 +780,11 @@ function renderOps(range){
     if(d.weeks>=2&&d.weeks<=3&&d.tot_s<teamAvgStops*0.7&&!['bulk','mgr'].includes(d.role))flags+='<span class="flag flag-ramp">Ramping</span>';
     if(d.weeks===1)flags+='<span class="flag flag-new">New</span>';
     const trendArrow=d.trend>15?'<span class="up">\u25B2'+d.trend+'%</span>':d.trend<-15?'<span class="down">\u25BC'+Math.abs(d.trend)+'%</span>':'<span class="flat">\u2014</span>';
+    // Workload cell with background tint for visual clarity
+    const zoneBg=d.intensityNorm>140?'#fef2f2':d.intensityNorm>115?'#fffbeb':d.intensityNorm>=85?'#f0fdf4':d.intensityNorm>=70?'#eff6ff':'#f9fafb';
     return `<tr>
-      <td><strong>${d.name}</strong>${flags}</td><td class="num" style="color:${zoneColor(d.intensityNorm)}"><strong>${d.intensityNorm}</strong></td>
+      <td><strong>${d.name}</strong>${flags}</td>
+      <td class="num" style="color:${zoneColor(d.intensityNorm)};background:${zoneBg};font-weight:700;border-radius:4px"><strong>${d.intensityNorm}</strong></td>
       <td class="num">${d.spd}</td><td class="num">${fi(d.ppd)}</td>
       <td class="num">${fi(d.tot_s)}</td><td class="num">${fi(d.tot_p)}</td>
       <td class="num">${d.pps.toFixed(1)}</td><td class="num">${d.days.toFixed(1)}</td>
@@ -727,7 +811,8 @@ function renderOps(range){
       {label:'Pickup',data:revenueDrivers.map(d=>d.puRev),backgroundColor:'#93c5fd'},
       {label:'Delivery',data:revenueDrivers.map(d=>d.delRev),backgroundColor:'#2563eb'},
       {label:'E-Commerce',data:revenueDrivers.map(d=>d.ecRev),backgroundColor:'#1e40af'}
-    ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}},
+    ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}},
       tooltip:{callbacks:{afterBody:()=>'(Est. net settlement by stop share)'}}},
     scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
 
@@ -739,7 +824,8 @@ function renderOps(range){
       {label:'PU Pkgs/Wk',data:chartDrv.map(d=>d.pp_avg),backgroundColor:'#86efac'},
       {label:'Del Pkgs/Wk',data:chartDrv.map(d=>d.dp_avg),backgroundColor:'#22c55e'},
       {label:'Ecom Pkgs/Wk',data:chartDrv.map(d=>d.ep_avg),backgroundColor:'#15803d'}
-    ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}}},
+    ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}}},
     scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>v.toLocaleString()}}}}});
 }
 
@@ -779,7 +865,8 @@ function renderTrends(range){
   charts.peakComp=new Chart(document.getElementById('cPeakComp'),{type:'bar',data:{labels:peakLabels,datasets:[
     {label:'Peak ('+peakWeeks.length+' wks)',data:pctData,backgroundColor:'rgba(220,38,38,0.5)',borderRadius:4},
     {label:'Normal ('+normalWeeks.length+' wks)',data:normPct,backgroundColor:'rgba(37,99,235,0.4)',borderRadius:4}
-  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}},
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}},
     tooltip:{callbacks:{label:ctx=>{
       const i=ctx.dataIndex;const isP=ctx.datasetIndex===0;
       const val=isP?peakData[i]:normData[i];
@@ -802,7 +889,8 @@ function renderTrends(range){
   charts.monthly=new Chart(document.getElementById('cMonthly'),{type:'bar',data:{labels:mLabels,datasets:[
     {label:'Avg Net/Wk',data:mKeys.map(k=>Math.round(months[k].net/months[k].weeks)),backgroundColor:'rgba(37,99,235,0.5)',borderRadius:4,yAxisID:'y'},
     {label:'Avg Pkgs/Wk',data:mKeys.map(k=>Math.round(months[k].pkgs/months[k].weeks)),type:'line',borderColor:'#059669',borderWidth:2,pointRadius:4,yAxisID:'y1'}
-  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}},
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}},
     tooltip:{callbacks:{label:ctx=>{
       const v=ctx.parsed.y;return ctx.dataset.label+': '+(ctx.datasetIndex===0?'$'+v.toLocaleString():v.toLocaleString())}}}},
     scales:{y:{position:'left',ticks:{callback:v=>'$'+v.toLocaleString()},title:{display:true,text:'Net Settlement',font:{size:11}}},
@@ -821,7 +909,8 @@ function renderTrends(range){
     labels:cArr.map(c=>c.name+' ('+c.desig+'%)'),
     datasets:[
       {label:'Avg Net/Wk',data:cArr.map(c=>Math.round(c.net/c.weeks)),backgroundColor:cArr.map(c=>c.color+'99'),borderRadius:4}
-    ]},options:{responsive:true,indexAxis:'horizontal',plugins:{legend:{display:false},
+    ]},options:{responsive:true,maintainAspectRatio:true,indexAxis:'horizontal',
+    plugins:{legend:{display:false},
       tooltip:{callbacks:{label:ctx=>{const c=cArr[ctx.dataIndex];return [
         'Net/Wk: $'+Math.round(c.net/c.weeks).toLocaleString(),
         'Net/Route: $'+Math.round(c.net/c.dd).toLocaleString(),
@@ -836,13 +925,14 @@ function renderTrends(range){
       {label:'P&D Variable',data:cArr.map(c=>Math.round(c.pd/c.weeks)),backgroundColor:'rgba(37,99,235,0.6)',stack:'s'},
       {label:'Fixed Charges',data:cArr.map(c=>Math.round(c.oc/c.weeks)),backgroundColor:'rgba(220,38,38,0.25)',stack:'s'},
       {label:'Surcharges',data:cArr.map(c=>Math.round(c.surcharge/c.weeks)),backgroundColor:'rgba(245,158,11,0.5)',stack:'s'}
-    ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
+    ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
     scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'$'+v.toLocaleString()},title:{display:true,text:'Avg $ per Week',font:{size:11}}}}}});
 
   // Period summary table
   const allPeriods=[
     ...cArr.map(c=>({
-      period:c.name+' (DESIG '+c.desig+'%)',weeks:c.weeks,
+      period:c.name+' (LP '+c.desig+'%)',weeks:c.weeks,
       avgNet:c.net/c.weeks,avgNetRoute:c.dd>0?c.net/c.dd:0,
       avgPkgs:c.pkgs/c.weeks,avgStops:c.stops/c.weeks,
       avgDrivers:c.dd/c.weeks/5,desig:c.desig+'%',avgSurcharge:c.surcharge/c.weeks
@@ -865,10 +955,179 @@ function renderTrends(range){
   </tr>`).join('');
 }
 
+// ===== NEW: DAILY VIEW — Day-of-Week Analysis =====
+function renderDaily(range){
+  destroyCharts();
+  const DOW_ORDER=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const DOW_SHORT=['Mon','Tue','Wed','Thu','Fri','Sat'];
+  const DOW_COLORS=['#2563eb','#7c3aed','#059669','#d97706','#dc2626','#6b7280'];
+
+  // Collect all daily records from the range
+  const allDaily=[];
+  range.forEach(w=>{
+    if(w.daily&&w.daily.length){
+      w.daily.forEach(d=>allDaily.push({...d,week:w.we}));
+    }
+  });
+
+  if(!allDaily.length){
+    document.getElementById('dowSummary').innerHTML='<p style="color:var(--gray);padding:20px;text-align:center">No daily data available for selected range.</p>';
+    document.getElementById('dailyBody').innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--gray);padding:20px">No daily data</td></tr>';
+    return;
+  }
+
+  // Aggregate by day of week
+  const dowAgg={};
+  DOW_ORDER.forEach(d=>{dowAgg[d]={count:0,del_stops:0,del_pkgs:0,pu_stops:0,pu_pkgs:0,total_stops:0,ec_stops:0,ec_pkgs:0,lp_pct:0,lp_amt:0}});
+  allDaily.forEach(d=>{
+    const a=dowAgg[d.dow];
+    if(!a)return;
+    a.count++;
+    a.del_stops+=d.del_stops||0;
+    a.del_pkgs+=d.del_pkg||0;
+    a.pu_stops+=d.pu_stops||0;
+    a.pu_pkgs+=d.pu_pkg||0;
+    a.total_stops+=d.total_stops||0;
+    a.ec_stops+=d.ec_stops||0;
+    a.ec_pkgs+=d.ec_pkg||0;
+    a.lp_pct+=d.lp_pct||0;
+    a.lp_amt+=d.lp_amt||0;
+  });
+
+  // Calculate averages
+  const dowAvg=DOW_ORDER.map((dow,i)=>{
+    const a=dowAgg[dow];
+    const n=a.count||1;
+    return{
+      dow,short:DOW_SHORT[i],color:DOW_COLORS[i],count:a.count,
+      del_stops:Math.round(a.del_stops/n),del_pkgs:Math.round(a.del_pkgs/n),
+      pu_stops:Math.round(a.pu_stops/n),pu_pkgs:Math.round(a.pu_pkgs/n),
+      total_stops:Math.round(a.total_stops/n),
+      ec_stops:Math.round(a.ec_stops/n),ec_pkgs:Math.round(a.ec_pkgs/n),
+      lp_pct:a.count>0?(a.lp_pct/n).toFixed(2):0,
+      lp_amt:Math.round(a.lp_amt/n),
+      ec_pct:a.total_stops>0?((a.ec_stops/a.total_stops)*100).toFixed(1):0
+    };
+  });
+
+  // Find busiest & lightest day for staffing insight
+  const maxStops=Math.max(...dowAvg.map(d=>d.total_stops));
+  const minStops=Math.min(...dowAvg.filter(d=>d.count>0).map(d=>d.total_stops));
+
+  // Chart 1: Stops by DOW — grouped bar (delivery vs pickup vs ecommerce)
+  charts.dowStops=new Chart(document.getElementById('cDowStops'),{type:'bar',data:{
+    labels:DOW_SHORT,
+    datasets:[
+      {label:'Delivery',data:dowAvg.map(d=>d.del_stops),backgroundColor:'#8b5cf6',borderRadius:4,stack:'s'},
+      {label:'Pickup',data:dowAvg.map(d=>d.pu_stops),backgroundColor:'#c4b5fd',borderRadius:4,stack:'s'},
+      {label:'E-Commerce',data:dowAvg.map(d=>d.ec_stops),backgroundColor:'#6d28d9',borderRadius:4,stack:'s'}
+    ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}},
+      tooltip:{callbacks:{afterBody:(items)=>{
+        const i=items[0].dataIndex;const d=dowAvg[i];
+        return 'Avg total: '+d.total_stops+' stops ('+d.count+' days sampled)';
+      }}}},
+    scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{callback:v=>v.toLocaleString()},
+      title:{display:true,text:'Avg Stops per Day',font:{size:11}}}}}});
+
+  // Chart 2: Packages by DOW
+  charts.dowPkgs=new Chart(document.getElementById('cDowPkgs'),{type:'bar',data:{
+    labels:DOW_SHORT,
+    datasets:[
+      {label:'Delivery',data:dowAvg.map(d=>d.del_pkgs),backgroundColor:'#22c55e',borderRadius:4,stack:'s'},
+      {label:'Pickup',data:dowAvg.map(d=>d.pu_pkgs),backgroundColor:'#86efac',borderRadius:4,stack:'s'},
+      {label:'E-Commerce',data:dowAvg.map(d=>d.ec_pkgs),backgroundColor:'#15803d',borderRadius:4,stack:'s'}
+    ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
+    scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{callback:v=>v.toLocaleString()},
+      title:{display:true,text:'Avg Packages per Day',font:{size:11}}}}}});
+
+  // Chart 3: E-Commerce % by DOW
+  const ecPctByDow=dowAvg.map(d=>parseFloat(d.ec_pct));
+  charts.dowEc=new Chart(document.getElementById('cDowEc'),{type:'bar',data:{
+    labels:DOW_SHORT,
+    datasets:[{label:'E-Commerce % of Stops',data:ecPctByDow,
+      backgroundColor:DOW_COLORS.map(c=>c+'80'),borderColor:DOW_COLORS,borderWidth:2,borderRadius:4}]
+  },options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y.toFixed(1)+'% e-commerce'}}},
+    scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'},title:{display:true,text:'E-Commerce % of Total Stops',font:{size:11}}}}}});
+
+  // Chart 4: Daily volume trend line (all days chronologically)
+  const sortedDaily=[...allDaily].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const dailyLabels=sortedDaily.map(d=>{
+    const parts=d.date.split('/');
+    return parts[0]+'/'+parts[1];
+  });
+  charts.dailyTrend=new Chart(document.getElementById('cDailyTrend'),{type:'line',data:{
+    labels:dailyLabels,
+    datasets:[
+      {label:'Total Stops',data:sortedDaily.map(d=>d.total_stops),borderColor:'#2563eb',borderWidth:2,pointRadius:2,tension:.3,fill:false},
+      {label:'E-Com Stops',data:sortedDaily.map(d=>d.ec_stops),borderColor:'#059669',borderWidth:1.5,pointRadius:1,tension:.3,fill:false,borderDash:[4,4]}
+    ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}},
+      tooltip:{callbacks:{title:items=>{const d=sortedDaily[items[0].dataIndex];return d.date+' ('+d.dow+')'}}}},
+    scales:{y:{beginAtZero:true,ticks:{callback:v=>v.toLocaleString()},title:{display:true,text:'Stops',font:{size:11}}}}}});
+
+  // DOW Summary cards (for staffing)
+  const busiestDay=dowAvg.reduce((a,b)=>b.total_stops>a.total_stops?b:a);
+  const lightestDay=dowAvg.filter(d=>d.count>0).reduce((a,b)=>b.total_stops<a.total_stops?b:a);
+  const overallAvg=Math.round(dowAvg.reduce((s,d)=>s+d.total_stops,0)/dowAvg.filter(d=>d.count>0).length);
+
+  document.getElementById('dowSummary').innerHTML=`
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px;line-height:1.6">
+      <strong style="color:#065f46">Staffing Insight:</strong>
+      <strong>${busiestDay.dow}</strong> is the busiest day (avg ${busiestDay.total_stops} stops),
+      <strong>${lightestDay.dow}</strong> is lightest (avg ${lightestDay.total_stops} stops) —
+      that's a <strong>${Math.round((busiestDay.total_stops-lightestDay.total_stops)/lightestDay.total_stops*100)}%</strong> swing.
+      Consider staffing ${Math.ceil(busiestDay.total_stops/overallAvg*100-100)}% above average on ${busiestDay.short}s.
+    </div>
+    <div class="dow-summary">
+      ${dowAvg.filter(d=>d.count>0).map(d=>{
+        const pctOfAvg=overallAvg>0?Math.round(d.total_stops/overallAvg*100):100;
+        const barColor=pctOfAvg>110?'var(--red)':pctOfAvg<90?'var(--blue)':'var(--green)';
+        return `<div class="dow-card">
+          <div class="dow-label">${d.dow}</div>
+          <div class="dow-val" style="color:${barColor}">${d.total_stops}</div>
+          <div class="dow-sub">stops/day avg</div>
+          <div style="margin-top:6px;font-size:11px">
+            <span style="color:var(--gray)">${d.del_pkgs} del</span> &bull;
+            <span style="color:var(--gray)">${d.pu_pkgs} pu</span> &bull;
+            <span style="color:var(--gray)">${d.ec_pkgs} ecom</span>
+          </div>
+          <div style="margin-top:4px;height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden">
+            <div style="width:${Math.min(pctOfAvg,150)}%;height:100%;background:${barColor};border-radius:2px"></div>
+          </div>
+          <div style="font-size:10px;color:var(--gray);margin-top:2px">${pctOfAvg}% of avg &bull; ${d.count} days</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  // Daily detail table
+  const sorted=[...allDaily].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('dailyBody').innerHTML=sorted.map(d=>{
+    const isHigh=(d.total_stops||0)>maxStops*0.9;
+    const isLow=(d.total_stops||0)<minStops*1.1;
+    const rowStyle=isHigh?'background:#fef2f2':isLow?'background:#eff6ff':'';
+    return `<tr style="${rowStyle}">
+      <td>${d.date}</td>
+      <td style="font-weight:600">${d.dow}</td>
+      <td class="num">${fi(d.del_stops||0)}</td>
+      <td class="num">${fi(d.del_pkg||0)}</td>
+      <td class="num">${fi(d.pu_stops||0)}</td>
+      <td class="num">${fi(d.pu_pkg||0)}</td>
+      <td class="num"><strong>${fi(d.total_stops||0)}</strong></td>
+      <td class="num">${fi(d.ec_stops||0)}</td>
+      <td class="num">${fi(d.ec_pkg||0)}</td>
+      <td class="num">${(d.lp_pct||0).toFixed(2)}%</td>
+      <td class="num">${fm(d.lp_amt||0)}</td>
+    </tr>`;
+  }).join('');
+}
+
 function exportCSV(){
   const range=getRange();
   if(!range.length) return;
-  const headers=['Week','Net Settlement','P&D Revenue','Fixed Charges','Total Charges','Total Pkgs','PU Pkgs','Del Pkgs','Ecom Pkgs','Total Stops','PU Stops','Del Stops','Ecom Stops','Drivers','Driver-Days','Net/Route','DESIG %','Fuel Surge','Peak Charge','P&D Adj','Large Pkg','Fuel Current','Fuel Base','Service Charge','Time Definite','Doubles','Non-Scan'];
+  const headers=['Week','Net Settlement','P&D Revenue','Fixed Charges','Total Charges','Total Pkgs','PU Pkgs','Del Pkgs','Ecom Pkgs','Total Stops','PU Stops','Del Stops','Ecom Stops','Drivers','Driver-Days','Net/Route','LP %','Fuel Surge','Peak Charge','P&D Adj','Large Pkg','Fuel Current','Fuel Base','Service Charge','Time Definite','Doubles','Non-Scan'];
   const rows=range.map(w=>{
     const dd=w.driver_days;
     return[w.we,w.net,w.pd,w.oc,w.tc,w.pp+w.dp+w.ep,w.pp,w.dp,w.ep,w.ts,w.ps,w.dss,w.es,w.dc,dd,dd>0?(w.net/dd).toFixed(2):0,w.desig,w.fs,w.peak,w.adjn||0,w.lg,w.cf,w.bf,w.svc,w.td,w.dbl,w.ns];
