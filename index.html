@@ -46,7 +46,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 @media(max-width:600px){
   .hero h1{font-size:24px}
-  .views-grid,.metric-list{grid-template-columns:1fr}
+  .views-grid,.metric-list{grid-template-columns:1fr !important}
   .container{padding:0 14px 40px}
 }
 </style>
@@ -69,16 +69,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 
   <div class="card">
-    <h2><span class="icon">&#128065;</span> Two Views</h2>
-    <p>The dashboard has two views designed for different needs:</p>
-    <div class="views-grid">
+    <h2><span class="icon">&#128065;</span> Three Views</h2>
+    <p>The dashboard has three views designed for different needs:</p>
+    <div class="views-grid" style="grid-template-columns:1fr 1fr 1fr">
       <div class="view-card">
         <h3>Executive View</h3>
-        <p>High-level financial and operational summary. See weekly revenue, cost trends, contract rate changes, and surcharge impacts at a glance. Best for weekly check-ins and owner-level decisions.</p>
+        <p>High-level financial and operational summary. See weekly settlement, cost trends, contract rate changes, and surcharge impacts at a glance.</p>
       </div>
       <div class="view-card">
         <h3>Operations View</h3>
-        <p>Driver-by-driver performance breakdown. Compare stops per day, package mix, work intensity, and efficiency across your entire team. Best for route optimization and driver coaching.</p>
+        <p>Driver-by-driver performance breakdown. Workload scoring, package mix, and efficiency across your team. Best for route optimization and coaching.</p>
+      </div>
+      <div class="view-card">
+        <h3>Trends View</h3>
+        <p>Period-over-period comparisons. Peak vs non-peak, monthly trends, and contract period analysis. Best for strategic planning.</p>
       </div>
     </div>
   </div>
@@ -91,8 +95,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <div class="desc">Total settlement after all charges, deductions, and adjustments</div>
       </div>
       <div class="metric">
-        <div class="name">Rev / Stop</div>
-        <div class="desc">Average revenue earned per delivery stop — your unit economics</div>
+        <div class="name">Net / Route</div>
+        <div class="desc">Net settlement per driver-day — what each route earns you after all charges</div>
       </div>
       <div class="metric">
         <div class="name">DESIG %</div>
@@ -113,7 +117,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </div>
     <div class="tip-box">
       <h4>Hover for Details</h4>
-      <p>Hover over any KPI card at the top of the dashboard to see a detailed tooltip breakdown. The Executive rev/stop card shows per-contract-period averages.</p>
+      <p>Hover over any KPI card at the top of the dashboard to see a detailed tooltip breakdown. The Net/Route card shows per-contract-period averages.</p>
     </div>
   </div>
 
@@ -143,8 +147,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <li><span class="step">1</span> <div>Click <strong>"Open Dashboard"</strong> above to launch the full analytics view</div></li>
       <li><span class="step">2</span> <div>Start in <strong>Executive View</strong> for a financial overview of the latest week</div></li>
       <li><span class="step">3</span> <div>Check the <strong>alert banner</strong> (if visible) for any notable changes like contract rate shifts or peak season surcharges</div></li>
-      <li><span class="step">4</span> <div>Switch to <strong>Operations View</strong> to drill into individual driver performance</div></li>
-      <li><span class="step">5</span> <div>Use <strong>date filtering</strong> to compare periods — e.g., peak season vs. normal weeks</div></li>
+      <li><span class="step">4</span> <div>Switch to <strong>Operations View</strong> to drill into individual driver performance and workload scores</div></li>
+      <li><span class="step">5</span> <div>Check the <strong>Trends View</strong> for peak vs non-peak comparisons and contract period analysis</div></li>
+      <li><span class="step">6</span> <div>Use <strong>date filtering</strong> to compare periods, or click <strong>CSV</strong> to export data for your own analysis</div></li>
     </ul>
   </div>
 

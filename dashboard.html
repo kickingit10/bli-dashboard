@@ -74,14 +74,42 @@ tr:hover{background:#f8fafc}
 .tag-mgr{background:#f0f9ff;color:#0369a1}
 .bar-cell{display:flex;align-items:center;height:16px}
 .bar-seg{height:100%;min-width:1px}
-.bar-pu{background:#93c5fd}.bar-del{background:#6366f1}.bar-ec{background:#34d399}
+.bar-pu{background:#c4b5fd}.bar-del{background:#8b5cf6}.bar-ec{background:#6d28d9}
 .up{color:var(--green)}.down{color:var(--red)}.flat{color:var(--gray)}
 
 /* Surcharge card */
 .surcharge-bar{height:24px;border-radius:4px;display:flex;overflow:hidden;margin:4px 0}
 .surcharge-bar div{height:100%;min-width:2px}
 
-@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}.kpi-row{grid-template-columns:repeat(3,1fr)}}
+/* Mobile responsive */
+@media(max-width:900px){
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .kpi-row{grid-template-columns:repeat(3,1fr)}
+  .dash{padding:12px}
+  header{flex-direction:column;gap:8px}
+  .controls{width:100%;justify-content:flex-start}
+  .card canvas{max-height:220px}
+}
+@media(max-width:600px){
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px}
+  .kpi{padding:12px}
+  .kpi .val{font-size:18px}
+  .kpi .lbl{font-size:10px}
+  .header-left h1{font-size:18px}
+  .header-left .sub{font-size:10px}
+  .controls{flex-wrap:wrap;gap:6px}
+  .controls select,.controls button,.controls input[type=date]{padding:6px 10px;font-size:12px}
+  .view-toggle button{padding:6px 12px;font-size:12px}
+  .date-controls{flex-wrap:wrap}
+  .card{padding:12px}
+  .card h3{font-size:13px}
+  table{font-size:11px;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  th{padding:6px 4px;font-size:10px}
+  td{padding:5px 4px}
+  .flag{font-size:9px;padding:1px 4px;margin-left:3px}
+  .tag{font-size:9px;padding:1px 6px}
+  .alert{font-size:12px;padding:10px 14px}
+}
 </style>
 </head>
 <body>
@@ -97,6 +125,7 @@ tr:hover{background:#f8fafc}
     <div class="view-toggle">
       <button id="btnExec" class="active" onclick="setView('exec')">Executive</button>
       <button id="btnOps" onclick="setView('ops')">Operations</button>
+      <button id="btnTrends" onclick="setView('trends')">Trends</button>
     </div>
     <select id="range" onchange="onRangeChange()">
       <option value="4">Last 4 Weeks</option>
@@ -110,40 +139,42 @@ tr:hover{background:#f8fafc}
       <label>From</label><input type="date" id="dateFrom" onchange="render()">
       <label>To</label><input type="date" id="dateTo" onchange="render()">
     </div>
+    <button onclick="exportCSV()" style="padding:7px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;cursor:pointer;font-weight:600;color:var(--dark)">&#8681; CSV</button>
   </div>
 </header>
 
+<div id="rangeLabel" style="font-size:12px;color:var(--gray);margin-bottom:8px;font-weight:600"></div>
 <div id="alert" class="alert"></div>
 <div id="kpiRow" class="kpi-row"></div>
 
 <!-- EXECUTIVE VIEW -->
 <div id="execView" class="section active">
   <div class="grid-2">
-    <div class="card"><h3>Weekly Settlement</h3><canvas id="cRev"></canvas></div>
-    <div class="card"><h3>Revenue per Route (P&D / Driver-Day)</h3><canvas id="cRoute"></canvas></div>
+    <div class="card"><h3>Where Does the Money Go?</h3><canvas id="cRev"></canvas></div>
+    <div class="card"><h3>How Much Net per Route?</h3><canvas id="cRoute"></canvas></div>
   </div>
   <div class="grid-3">
-    <div class="card"><h3>Cost Mix — Current Week</h3><canvas id="cMix"></canvas></div>
-    <div class="card"><h3>Package Volume</h3><canvas id="cVolPkg"></canvas></div>
-    <div class="card"><h3>Stop Volume</h3><canvas id="cVolStop"></canvas></div>
+    <div class="card"><h3>What's the Cost Breakdown? <span style="font-size:11px;font-weight:400;color:var(--gray)">(avg/wk)</span></h3><canvas id="cMix"></canvas></div>
+    <div class="card"><h3>Are Packages Growing?</h3><canvas id="cVolPkg"></canvas></div>
+    <div class="card"><h3>Are Stops Increasing?</h3><canvas id="cVolStop"></canvas></div>
   </div>
   <div class="grid-2">
-    <div class="card"><h3>Surcharges & Peak Charges</h3><canvas id="cSurcharge"></canvas></div>
-    <div class="card"><h3>Contract Rate (DESIG %)</h3><canvas id="cDesig"></canvas></div>
+    <div class="card"><h3>How Much Are Surcharges Costing?</h3><canvas id="cSurcharge"></canvas></div>
+    <div class="card"><h3>How Has the Contract Rate Changed?</h3><canvas id="cDesig"></canvas></div>
   </div>
   <div class="grid-2">
-    <div class="card"><h3>Fuel Rate</h3><canvas id="cFuel"></canvas></div>
-    <div class="card"><h3>Large Package Surcharge</h3><canvas id="cLargePkg"></canvas></div>
+    <div class="card"><h3>Fuel: Current vs Base Rate</h3><canvas id="cFuel"></canvas></div>
+    <div class="card"><h3>Large Package Surcharge Trend</h3><canvas id="cLargePkg"></canvas></div>
   </div>
 
   <!-- Weekly Summary Table -->
   <div class="card card-full" style="margin-bottom:16px">
-    <h3>Weekly Summary</h3>
+    <h3>Week-by-Week Breakdown</h3>
     <div style="overflow-x:auto">
     <table id="execTable">
       <thead><tr>
         <th data-c="we">Week</th><th data-c="net">Net Settlement</th><th data-c="pd">P&D Rev</th>
-        <th data-c="revRoute">Rev/Route</th><th data-c="desig">DESIG %</th><th data-c="fixPct">Fixed %</th>
+        <th data-c="revRoute">Net/Route</th><th data-c="desig">DESIG %</th><th data-c="fixPct">Fixed %</th>
         <th data-c="tp">Total Pkgs</th><th data-c="ts">Total Stops</th>
         <th data-c="dc">Drivers</th><th data-c="dd">Driver-Days</th>
         <th data-c="fs">Surge</th><th data-c="peak">Peak</th>
@@ -156,14 +187,14 @@ tr:hover{background:#f8fafc}
 
   <div class="grid-2">
     <div class="card">
-      <h3>Charge Adjustments Detail</h3>
+      <h3>What's Being Adjusted?</h3>
       <table>
         <thead><tr><th>Week</th><th>Count</th><th>Amount</th><th>Notes</th></tr></thead>
         <tbody id="adjBody"></tbody>
       </table>
     </div>
     <div class="card">
-      <h3>Double Stops & Non-Scans</h3>
+      <h3>Double Stops & Scan Issues</h3>
       <table>
         <thead><tr><th>Week</th><th>Doubles</th><th>Non-Scan</th><th>Total Stops</th><th>Dbl %</th></tr></thead>
         <tbody id="dblBody"></tbody>
@@ -175,19 +206,19 @@ tr:hover{background:#f8fafc}
 <!-- OPERATIONS VIEW -->
 <div id="opsView" class="section">
   <div class="grid-2">
-    <div class="card"><h3>Workload Intensity — <span id="opsRange">All Data</span></h3><canvas id="cIntensity"></canvas>
-      <div style="margin-top:8px;font-size:10px;color:var(--gray)">Bubble size = intensity score &bull; Color = driver type &bull; Bulk/Manager drivers shown separately</div>
+    <div class="card"><h3>Who's Overworked? — <span id="opsRange">All Data</span> <span style="font-size:11px;font-weight:400;color:var(--gray)">(100 = team avg)</span></h3><canvas id="cIntensity"></canvas>
+      <div style="margin-top:8px;font-size:10px;color:var(--gray)"><span style="color:#dc2626">&bull;</span> Overworked (140+) <span style="color:#f59e0b">&bull;</span> Heavy (115-140) <span style="color:#059669">&bull;</span> Normal (85-115) <span style="color:#3b82f6">&bull;</span> Light (70-85) <span style="color:#9ca3af">&bull;</span> Under (&lt;70)</div>
     </div>
-    <div class="card"><h3>Packages per Stop (by Type)</h3><canvas id="cPPS"></canvas></div>
+    <div class="card"><h3>How Dense Are Deliveries?</h3><canvas id="cPPS"></canvas></div>
   </div>
 
   <div class="card card-full" style="margin-bottom:16px">
-    <h3>Driver Workload — <span id="opsRange2">All Data</span></h3>
+    <h3>Driver Scorecard — <span id="opsRange2">All Data</span></h3>
     <div style="overflow-x:auto">
     <table id="opsTable">
       <thead><tr>
         <th data-c="name">Driver</th>
-        <th data-c="intensityNorm">Intensity</th>
+        <th data-c="intensityNorm">Workload</th>
         <th data-c="spd">Stops/Day</th>
         <th data-c="ppd">Pkgs/Day</th>
         <th data-c="tot_s">Avg Stops/Wk</th>
@@ -205,15 +236,51 @@ tr:hover{background:#f8fafc}
 
   <div class="grid-2">
     <div class="card">
-      <h3>Revenue Leaders — <span id="revLeaderRange">All Data</span></h3>
+      <h3>Who Drives the Most Net? — <span id="revLeaderRange">All Data</span></h3>
       <canvas id="cRevLeaders"></canvas>
     </div>
     <div class="card">
-      <h3>Driver Comparison — <span id="opsChartRange">All Data</span></h3>
+      <h3>Package Volume by Driver — <span id="opsChartRange">All Data</span></h3>
       <canvas id="cDrivers"></canvas>
     </div>
   </div>
 </div>
+
+<div id="trendsView" class="section">
+  <div class="grid-2">
+    <div class="card">
+      <h3>How Does Peak Season Compare?</h3>
+      <canvas id="cPeakComp"></canvas>
+    </div>
+    <div class="card">
+      <h3>Month-over-Month: Net & Volume</h3>
+      <canvas id="cMonthly"></canvas>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Which Contract Period Performed Best?</h3>
+      <canvas id="cContractComp"></canvas>
+    </div>
+    <div class="card">
+      <h3>How Do Costs Shift by Contract?</h3>
+      <canvas id="cCostByPeriod"></canvas>
+    </div>
+  </div>
+  <div class="card card-full" style="margin-bottom:16px">
+    <h3>Period-over-Period Summary</h3>
+    <div style="overflow-x:auto">
+    <table id="trendTable">
+      <thead><tr>
+        <th>Period</th><th>Weeks</th><th>Avg Net</th><th>Avg Net/Route</th>
+        <th>Avg Pkgs</th><th>Avg Stops</th><th>Avg Drivers</th><th>DESIG</th><th>Avg Surcharges</th>
+      </tr></thead>
+      <tbody id="trendBody"></tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -311,10 +378,10 @@ function getPrev(range){return range.length>1?range[range.length-2]:null}
 
 function setView(v){
   view=v;
-  document.getElementById('btnExec').className=v==='exec'?'active':'';
-  document.getElementById('btnOps').className=v==='ops'?'active':'';
-  document.getElementById('execView').className='section'+(v==='exec'?' active':'');
-  document.getElementById('opsView').className='section'+(v==='ops'?' active':'');
+  ['exec','ops','trends'].forEach(t=>{
+    document.getElementById('btn'+t.charAt(0).toUpperCase()+t.slice(1)).className=v===t?'active':'';
+    document.getElementById(t+'View').className='section'+(v===t?' active':'');
+  });
   render();
 }
 
@@ -322,11 +389,14 @@ function render(){
   const range=getRange();
   if(!range.length) return;
   const cur=getCurrent(range),prev=getPrev(range);
+  // Update range label
+  document.getElementById('rangeLabel').textContent='Showing: '+range[0].we+' — '+range[range.length-1].we+' ('+range.length+' week'+(range.length>1?'s':'')+')';
   updateContractInfo(cur);
   renderKPIs(cur,prev,range);
   renderAlert(cur,prev,range);
   if(view==='exec') renderExec(range,cur);
-  else renderOps(range);
+  else if(view==='ops') renderOps(range);
+  else if(view==='trends') renderTrends(range);
 }
 
 function updateContractInfo(w){
@@ -337,8 +407,8 @@ function updateContractInfo(w){
 }
 
 function renderKPIs(w,p,range){
-  const dd=w.driver_days,revRoute=dd>0?w.pd/dd:0;
-  const pdd=p?p.driver_days:null,prevRevRoute=pdd?p.pd/pdd:null;
+  const dd=w.driver_days,revRoute=dd>0?w.net/dd:0;
+  const pdd=p?p.driver_days:null,prevRevRoute=pdd?p.net/pdd:null;
   const tp=w.pp+w.dp+w.ep,ptp=p?(p.pp+p.dp+p.ep):null;
   const surcharge=w.fs+w.peak+(w.adjn||0);
 
@@ -346,13 +416,13 @@ function renderKPIs(w,p,range){
   const contractGroups={};
   range.forEach(r=>{
     const c=getContract(r.we);
-    if(!contractGroups[c.name]) contractGroups[c.name]={name:c.name,desig:c.desig,weeks:0,totalPD:0,totalDD:0,color:c.color};
+    if(!contractGroups[c.name]) contractGroups[c.name]={name:c.name,desig:c.desig,weeks:0,totalNet:0,totalDD:0,color:c.color};
     contractGroups[c.name].weeks++;
-    contractGroups[c.name].totalPD+=r.pd;
+    contractGroups[c.name].totalNet+=r.net;
     contractGroups[c.name].totalDD+=r.driver_days;
   });
   const contractTipRows=Object.values(contractGroups).map(c=>{
-    const avgRR=c.totalDD>0?c.totalPD/c.totalDD:0;
+    const avgRR=c.totalDD>0?c.totalNet/c.totalDD:0;
     return `<div class="tip-row"><span class="tip-label">${c.name} (${c.desig}%)</span><span class="tip-val">$${avgRR.toFixed(0)}/route &middot; ${c.weeks}wk</span></div>`;
   }).join('');
 
@@ -375,8 +445,8 @@ function renderKPIs(w,p,range){
        <div class="tip-row"><span class="tip-label">Delivery</span><span class="tip-val">${fi(w.dp)}</span></div>
        <div class="tip-row"><span class="tip-label">E-Commerce</span><span class="tip-val">${fi(w.ep)}</span></div>
        <div class="tip-row"><span class="tip-label">Period Avg</span><span class="tip-val">${fi(Math.round(avgTP))}</span></div>`},
-    {l:'Rev / Route',v:'$'+revRoute.toFixed(0),d:fp(revRoute,prevRevRoute),
-     tip:`<h4>Revenue per Route by Contract</h4>${contractTipRows}
+    {l:'Net / Route',v:'$'+revRoute.toFixed(0),d:fp(revRoute,prevRevRoute),
+     tip:`<h4>Net per Route by Contract</h4>${contractTipRows}
        <div class="tip-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px"><span class="tip-label">Current DESIG</span><span class="tip-val">${w.desig}%</span></div>`},
     {l:'Active Drivers',v:w.dc,d:fp(w.dc,p?.dc),
      tip:`<h4>Workforce</h4>
@@ -412,8 +482,8 @@ function renderAlert(w,p,range){
   if(w.cf>w.bf*1.1) msgs.push('<strong>Fuel premium</strong> $'+(w.cf-w.bf).toFixed(3)+' above base');
   const dd_drv=w.drv.filter(d=>!['bulk','mgr'].includes(DRIVER_ROLES[d.id]||'')).map(d=>({name:d.name,spd:d.days>0?(d.ps+d.ds+d.es)/d.days:0}));
   const avgSPD=dd_drv.reduce((s,d)=>s+d.spd,0)/dd_drv.length;
-  const overworked=dd_drv.filter(d=>d.spd>avgSPD*1.5&&d.spd>80).map(d=>d.name);
-  if(overworked.length) msgs.push('<strong>High intensity:</strong> '+overworked.join(', ')+' at 50%+ above avg stops/day');
+  const overworked=dd_drv.filter(d=>d.spd>avgSPD*1.4).map(d=>d.name);
+  if(overworked.length) msgs.push('<strong>Overworked:</strong> '+overworked.join(', ')+' at 40%+ above team avg stops/day');
   // Contract change alert
   if(p&&w.desig!==p.desig) msgs.push('<strong>Contract rate change:</strong> DESIG moved from '+p.desig+'% to '+w.desig+'%');
   a.innerHTML=msgs.join('<br>');
@@ -429,46 +499,51 @@ function renderExec(range){
   // Settlement — stacked bar with net line
   charts.rev=new Chart(document.getElementById('cRev'),{type:'bar',data:{labels,datasets:[
     {label:'P&D Revenue',data:range.map(w=>w.pd),backgroundColor:'rgba(37,99,235,0.6)',borderRadius:4,order:2},
-    {label:'Fixed Charges',data:range.map(w=>w.oc-w.adjn),backgroundColor:'rgba(220,38,38,0.25)',borderRadius:4,order:2},
+    {label:'Fixed Charges',data:range.map(w=>Math.max(0,w.oc-w.adjn)),backgroundColor:'rgba(220,38,38,0.25)',borderRadius:4,order:2},
     {label:'Surcharges',data:range.map(w=>w.fs+w.peak+w.adjn),backgroundColor:'rgba(245,158,11,0.5)',borderRadius:4,order:2},
     {label:'Net Due',data:range.map(w=>w.net),type:'line',borderColor:'#1a1a2e',borderWidth:2,pointRadius:4,pointBackgroundColor:'#1a1a2e',order:1}
   ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}},
     tooltip:{callbacks:{label:ctx=>{const v=ctx.parsed.y;return ctx.dataset.label+': $'+v.toLocaleString(undefined,{minimumFractionDigits:0})}}}},
     scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
 
-  // Revenue per Route with contract band colors
-  const routeData=range.map(w=>w.driver_days>0?w.pd/w.driver_days:0);
+  // Net per Route with contract band colors
+  const routeData=range.map(w=>w.driver_days>0?w.net/w.driver_days:0);
   const barColors=range.map(w=>{const c=getContract(w.we);return c.color+'99'});
   charts.route=new Chart(document.getElementById('cRoute'),{type:'bar',data:{labels,datasets:[
-    {label:'P&D Rev / Driver-Day',data:routeData,backgroundColor:barColors,borderRadius:4}
+    {label:'Net / Driver-Day',data:routeData,backgroundColor:barColors,borderRadius:4}
   ]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
     const w=range[ctx.dataIndex];const c=getContract(w.we);
     return '$'+ctx.parsed.y.toFixed(0)+'/route ('+c.name+' · DESIG '+c.desig+'%)'}}}},
-    scales:{y:{ticks:{callback:v=>'$'+v.toFixed(0)},title:{display:true,text:'P&D Revenue per Driver-Day',font:{size:11}}}}}});
+    scales:{y:{ticks:{callback:v=>'$'+v.toFixed(0)},title:{display:true,text:'Net Settlement per Driver-Day',font:{size:11}}}}}});
 
-  // Mix doughnut
-  const w=range[range.length-1];
-  const surchargeTotal=w.fs+w.peak+w.adjn;
+  // Mix doughnut — range average
+  const n=range.length;
+  const avgPD=range.reduce((s,r)=>s+r.pd,0)/n;
+  const avgSvc=range.reduce((s,r)=>s+r.svc,0)/n;
+  const avgLg=range.reduce((s,r)=>s+r.lg,0)/n;
+  const avgTD=range.reduce((s,r)=>s+r.td,0)/n;
+  const avgSurcharge=range.reduce((s,r)=>s+r.fs+r.peak+r.adjn,0)/n;
+  const avgOC=range.reduce((s,r)=>s+r.oc,0)/n;
   charts.mix=new Chart(document.getElementById('cMix'),{type:'doughnut',data:{
-    labels:['P&D Variable','Service Charge','Large Package','Time Definite',surchargeTotal>0?'Surcharges':'Other Fixed'],
-    datasets:[{data:[w.pd,w.svc,w.lg,w.td,surchargeTotal>0?surchargeTotal:w.oc-w.svc-w.td-w.lg],
-      backgroundColor:['#2563eb','#dc2626','#f59e0b','#8b5cf6',surchargeTotal>0?'#ef4444':'#9ca3af'],borderWidth:0}]
+    labels:['P&D Variable','Service Charge','Large Package','Time Definite',avgSurcharge>0?'Surcharges':'Other Fixed'],
+    datasets:[{data:[Math.round(avgPD),Math.round(avgSvc),Math.round(avgLg),Math.round(avgTD),avgSurcharge>0?Math.round(avgSurcharge):Math.round(avgOC-avgSvc-avgTD-avgLg)],
+      backgroundColor:['#2563eb','#dc2626','#f59e0b','#8b5cf6',avgSurcharge>0?'#ef4444':'#9ca3af'],borderWidth:0}]
   },options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}},
-    tooltip:{callbacks:{label:ctx=>{const v=ctx.parsed;const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ctx.label+': $'+v.toLocaleString()+' ('+(v/t*100).toFixed(1)+'%)'}}}}}});
+    tooltip:{callbacks:{label:ctx=>{const v=ctx.parsed;const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ctx.label+': $'+v.toLocaleString()+' avg/wk ('+(v/t*100).toFixed(1)+'%)'}}}}}});
 
-  // Package Volume
+  // Package Volume — green family
   charts.volPkg=new Chart(document.getElementById('cVolPkg'),{type:'bar',data:{labels,datasets:[
-    {label:'Pickup',data:range.map(w=>w.pp),backgroundColor:'#93c5fd',stack:'s'},
-    {label:'Delivery',data:range.map(w=>w.dp),backgroundColor:'#6366f1',stack:'s'},
-    {label:'E-Commerce',data:range.map(w=>w.ep),backgroundColor:'#34d399',stack:'s'}
+    {label:'Pickup',data:range.map(w=>w.pp),backgroundColor:'#86efac',stack:'s'},
+    {label:'Delivery',data:range.map(w=>w.dp),backgroundColor:'#22c55e',stack:'s'},
+    {label:'E-Commerce',data:range.map(w=>w.ep),backgroundColor:'#15803d',stack:'s'}
   ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
     scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>v.toLocaleString()},title:{display:true,text:'Packages',font:{size:11}}}}}});
 
-  // Stop Volume
+  // Stop Volume — purple family
   charts.volStop=new Chart(document.getElementById('cVolStop'),{type:'bar',data:{labels,datasets:[
-    {label:'Pickup',data:range.map(w=>w.ps),backgroundColor:'#93c5fd',stack:'s'},
-    {label:'Delivery',data:range.map(w=>w.dss),backgroundColor:'#6366f1',stack:'s'},
-    {label:'E-Commerce',data:range.map(w=>w.es),backgroundColor:'#34d399',stack:'s'}
+    {label:'Pickup',data:range.map(w=>w.ps),backgroundColor:'#c4b5fd',stack:'s'},
+    {label:'Delivery',data:range.map(w=>w.dss),backgroundColor:'#8b5cf6',stack:'s'},
+    {label:'E-Commerce',data:range.map(w=>w.es),backgroundColor:'#6d28d9',stack:'s'}
   ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
     scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>v.toLocaleString()},title:{display:true,text:'Stops',font:{size:11}}}}}});
 
@@ -483,7 +558,7 @@ function renderExec(range){
 
   // NEW: Contract Rate chart
   charts.desig=new Chart(document.getElementById('cDesig'),{type:'line',data:{labels,datasets:[
-    {label:'DESIG %',data:range.map(w=>w.desig),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.08)',fill:true,tension:0,pointRadius:5,borderWidth:2.5,
+    {label:'DESIG %',data:range.map(w=>w.desig),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.08)',fill:true,stepped:'before',pointRadius:5,borderWidth:2.5,
       pointBackgroundColor:range.map(w=>getContract(w.we).color)}
   ]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
     const w=range[ctx.dataIndex];const c=getContract(w.we);return c.name+': '+ctx.parsed.y.toFixed(2)+'%'}}}},
@@ -509,7 +584,7 @@ function renderExec(range){
     const tp=w.pp+w.dp+w.ep;
     const dd=w.driver_days;
     const c=getContract(w.we);
-    return{we:w.we,net:w.net,pd:w.pd,revRoute:dd>0?w.pd/dd:0,desig:w.desig,fixPct:w.oc/w.tc,
+    return{we:w.we,net:w.net,pd:w.pd,revRoute:dd>0?w.net/dd:0,desig:w.desig,fixPct:w.oc/w.tc,
       tp,ts:w.ts,dc:w.dc,dd,fs:w.fs,peak:w.peak,adjn:w.adjn,adj:w.adj,contract:c,isPeak:isPeak(w.we)};
   });
   rows.sort((a,b)=>{let va=a[st.col],vb=b[st.col];if(typeof va==='string'){va=va.toLowerCase();vb=vb.toLowerCase()}return st.dir==='asc'?(va>vb?1:-1):(va<vb?1:-1)});
@@ -556,7 +631,7 @@ function renderOps(range){
     const ts=a.ps+a.ds+a.es,tp=a.pp+a.dp+a.ep,wk=a.weeks;
     const avgS=ts/wk,avgP=tp/wk,avgD=a.days/wk;
     const pps=ts>0?tp/ts:0,spd=a.days>0?ts/a.days:0,ppd=a.days>0?tp/a.days:0;
-    const rawIntensity=spd*0.6+ppd*0.4;
+    const rawIntensity=spd; // stops/day is primary workload metric
     const ecPct=ts>0?a.es/ts:0,puPct=ts>0?a.ps/ts:0,delPct=ts>0?a.ds/ts:0;
     const knownRole=DRIVER_ROLES[id];
     let role;
@@ -578,35 +653,36 @@ function renderOps(range){
       intensity:Math.round(rawIntensity),stopShare:ts};
   });
 
-  const routeDrivers=drivers.filter(d=>!['bulk','mgr'].includes(d.role));
-  const maxIntensity=Math.max(...routeDrivers.map(d=>d.intensity),1);
-  drivers.forEach(d=>{d.intensityNorm=Math.round(d.intensity/maxIntensity*100)});
+  const routeDrivers=drivers.filter(d=>!['bulk','mgr'].includes(d.role)&&d.days>0&&d.tot_s>30);
+  const teamAvgSPD=routeDrivers.length>0?routeDrivers.reduce((s,d)=>s+d.spd,0)/routeDrivers.length:1;
+  // Workload score: 100 = team average stops/day. Under 70 = light, over 140 = overworked
+  drivers.forEach(d=>{d.intensityNorm=teamAvgSPD>0?Math.min(200,Math.round(d.spd/teamAvgSPD*100)):0});
 
   const roleLabels={ec:'E-Commerce',mix:'Balanced',del:'Delivery',heavy:'Heavy Load',route:'Route Runner',bulk:'Bulk/Dock',mgr:'Manager'};
   const roleColors={ec:'#059669',mix:'#2563eb',del:'#7c3aed',heavy:'#d97706',route:'#8b5cf6',bulk:'#a855f7',mgr:'#0ea5e9'};
 
-  // Intensity scatter
+  // Intensity scatter — workload score zones (100 = team avg)
+  const zoneLabel=s=>s>140?'Overworked':s>115?'Heavy':s>=85?'Normal':s>=70?'Light':'Under';
+  const zoneColor=s=>s>140?'#dc2626':s>115?'#f59e0b':s>=85?'#059669':s>=70?'#3b82f6':'#9ca3af';
   const scatterData=drivers.filter(d=>d.days>0&&d.tot_s>30).map(d=>({x:d.spd,y:d.ppd,name:d.name,role:d.role,intensity:d.intensityNorm}));
   charts.intensity=new Chart(document.getElementById('cIntensity'),{type:'scatter',data:{
     datasets:[{data:scatterData.map(d=>({x:d.x,y:d.y})),
-      backgroundColor:scatterData.map(d=>roleColors[d.role]||'#6b7280'),
-      pointRadius:scatterData.map(d=>5+d.intensity/12),pointHoverRadius:12}]
+      backgroundColor:scatterData.map(d=>zoneColor(d.intensity)),
+      pointRadius:scatterData.map(d=>Math.max(6,Math.min(14,d.intensity/10))),pointHoverRadius:14}]
   },options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{
-    label:ctx=>{const d=scatterData[ctx.dataIndex];return d.name+' ['+roleLabels[d.role]+']: '+d.x+' stops/day, '+d.y+' pkgs/day'}}}},
-    scales:{x:{title:{display:true,text:'Stops / Day',font:{size:11}}},y:{title:{display:true,text:'Packages / Day',font:{size:11}}}}}});
+    label:ctx=>{const d=scatterData[ctx.dataIndex];return d.name+': '+d.x+' stops/day, '+d.y+' pkgs/day — Score '+d.intensity+' ('+zoneLabel(d.intensity)+')'}}}},
+    scales:{x:{title:{display:true,text:'Stops / Day (team avg: '+Math.round(teamAvgSPD)+')',font:{size:11}}},y:{title:{display:true,text:'Packages / Day',font:{size:11}}}}}});
 
   // PPS
   charts.pps=new Chart(document.getElementById('cPPS'),{type:'line',data:{labels,datasets:[
-    {label:'Pickup',data:range.map(w=>w.ps>0?w.pp/w.ps:0),borderColor:'#93c5fd',borderWidth:2.5,tension:.3,pointRadius:4},
-    {label:'Delivery',data:range.map(w=>w.dss>0?w.dp/w.dss:0),borderColor:'#6366f1',borderWidth:2.5,tension:.3,pointRadius:4},
-    {label:'E-Commerce',data:range.map(w=>w.es>0?w.ep/w.es:0),borderColor:'#34d399',borderWidth:2.5,tension:.3,pointRadius:4}
+    {label:'Pickup',data:range.map(w=>w.ps>0?w.pp/w.ps:0),borderColor:'#86efac',borderWidth:2.5,tension:.3,pointRadius:4},
+    {label:'Delivery',data:range.map(w=>w.dss>0?w.dp/w.dss:0),borderColor:'#22c55e',borderWidth:2.5,tension:.3,pointRadius:4},
+    {label:'E-Commerce',data:range.map(w=>w.es>0?w.ep/w.es:0),borderColor:'#15803d',borderWidth:2.5,tension:.3,pointRadius:4}
   ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}}},
     scales:{y:{beginAtZero:true,title:{display:true,text:'Packages per Stop',font:{size:11}},ticks:{callback:v=>v.toFixed(1)}}}}});
 
-  // Driver table
-  const activeDrvs=drivers.filter(d=>d.days>0&&d.tot_s>30&&!['bulk','mgr'].includes(d.role));
-  const teamAvgIntensity=activeDrvs.length>0?activeDrvs.reduce((s,d)=>s+d.intensity,0)/activeDrvs.length:1;
-  const teamAvgStops=activeDrvs.length>0?activeDrvs.reduce((s,d)=>s+d.tot_s,0)/activeDrvs.length:1;
+  // Driver table — using zone-based workload scores
+  const teamAvgStops=routeDrivers.length>0?routeDrivers.reduce((s,d)=>s+d.tot_s,0)/routeDrivers.length:1;
   const st=sortState.ops;
   drivers.sort((a,b)=>{let va=a[st.col],vb=b[st.col];if(typeof va==='string'){va=va.toLowerCase();vb=vb.toLowerCase()}return st.dir==='asc'?(va>vb?1:-1):(va<vb?1:-1)});
   const maxS=Math.max(...drivers.map(d=>d.tot_s),1);
@@ -616,14 +692,15 @@ function renderOps(range){
     if(d.role==='bulk')flags+='<span class="flag flag-bulk">Bulk</span>';
     else if(d.role==='mgr')flags+='<span class="flag flag-mgr">Mgr</span>';
     else{
-      if(d.intensity>teamAvgIntensity*1.4&&d.tot_s>30)flags+='<span class="flag flag-high">High</span>';
-      if(d.intensity<teamAvgIntensity*.5&&d.tot_s>30&&d.weeks>1)flags+='<span class="flag flag-low">Low</span>';
+      if(d.intensityNorm>140&&d.tot_s>30)flags+='<span class="flag flag-high">Overworked</span>';
+      else if(d.intensityNorm>115&&d.tot_s>30)flags+='<span class="flag flag-surge">Heavy</span>';
+      else if(d.intensityNorm<70&&d.tot_s>30&&d.weeks>1)flags+='<span class="flag flag-low">Under</span>';
     }
     if(d.weeks>=2&&d.weeks<=3&&d.tot_s<teamAvgStops*0.7&&!['bulk','mgr'].includes(d.role))flags+='<span class="flag flag-ramp">Ramping</span>';
     if(d.weeks===1)flags+='<span class="flag flag-new">New</span>';
     const trendArrow=d.trend>15?'<span class="up">\u25B2'+d.trend+'%</span>':d.trend<-15?'<span class="down">\u25BC'+Math.abs(d.trend)+'%</span>':'<span class="flat">\u2014</span>';
     return `<tr>
-      <td><strong>${d.name}</strong>${flags}</td><td class="num"><strong>${d.intensityNorm}</strong></td>
+      <td><strong>${d.name}</strong>${flags}</td><td class="num" style="color:${zoneColor(d.intensityNorm)}"><strong>${d.intensityNorm}</strong></td>
       <td class="num">${d.spd}</td><td class="num">${fi(d.ppd)}</td>
       <td class="num">${fi(d.tot_s)}</td><td class="num">${fi(d.tot_p)}</td>
       <td class="num">${d.pps.toFixed(1)}</td><td class="num">${d.days.toFixed(1)}</td>
@@ -633,24 +710,25 @@ function renderOps(range){
   }).join('');
   updateSortHeaders('opsTable',st);
 
-  // Revenue Leaders
+  // Revenue Leaders — Net settlement allocated by stop share
   const totalStopsRange=range.reduce((s,w)=>s+w.ts,0);
-  const totalPDRange=range.reduce((s,w)=>s+w.pd,0);
+  const totalNetRange=range.reduce((s,w)=>s+w.net,0);
   const revenueDrivers=drivers.filter(d=>d.raw_stops>0).map(d=>{
-    const revShare=(d.raw_stops/totalStopsRange)*totalPDRange;
+    const netShare=(d.raw_stops/totalStopsRange)*totalNetRange;
     const totalDriverStops=d.raw_stops;
-    return{name:d.name,rev:revShare,
-      puRev:Math.round(totalDriverStops>0?(d.ps*d.weeks/totalDriverStops)*revShare:0),
-      delRev:Math.round(totalDriverStops>0?(d.ds*d.weeks/totalDriverStops)*revShare:0),
-      ecRev:Math.round(totalDriverStops>0?(d.es*d.weeks/totalDriverStops)*revShare:0),role:d.role};
+    return{name:d.name,rev:netShare,
+      puRev:Math.round(totalDriverStops>0?(d.ps*d.weeks/totalDriverStops)*netShare:0),
+      delRev:Math.round(totalDriverStops>0?(d.ds*d.weeks/totalDriverStops)*netShare:0),
+      ecRev:Math.round(totalDriverStops>0?(d.es*d.weeks/totalDriverStops)*netShare:0),role:d.role};
   }).sort((a,b)=>b.rev-a.rev);
   charts.revLeaders=new Chart(document.getElementById('cRevLeaders'),{type:'bar',data:{
     labels:revenueDrivers.map(d=>d.name.split(' ')[1]),
     datasets:[
       {label:'Pickup',data:revenueDrivers.map(d=>d.puRev),backgroundColor:'#93c5fd'},
-      {label:'Delivery',data:revenueDrivers.map(d=>d.delRev),backgroundColor:'#6366f1'},
-      {label:'E-Commerce',data:revenueDrivers.map(d=>d.ecRev),backgroundColor:'#34d399'}
-    ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}}},
+      {label:'Delivery',data:revenueDrivers.map(d=>d.delRev),backgroundColor:'#2563eb'},
+      {label:'E-Commerce',data:revenueDrivers.map(d=>d.ecRev),backgroundColor:'#1e40af'}
+    ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}},
+      tooltip:{callbacks:{afterBody:()=>'(Est. net settlement by stop share)'}}},
     scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
 
   // Driver comparison
@@ -658,9 +736,9 @@ function renderOps(range){
   charts.drv=new Chart(document.getElementById('cDrivers'),{type:'bar',data:{
     labels:chartDrv.map(d=>d.name.split(' ')[1]),
     datasets:[
-      {label:'PU Pkgs/Wk',data:chartDrv.map(d=>d.pp_avg),backgroundColor:'#93c5fd'},
-      {label:'Del Pkgs/Wk',data:chartDrv.map(d=>d.dp_avg),backgroundColor:'#6366f1'},
-      {label:'Ecom Pkgs/Wk',data:chartDrv.map(d=>d.ep_avg),backgroundColor:'#34d399'}
+      {label:'PU Pkgs/Wk',data:chartDrv.map(d=>d.pp_avg),backgroundColor:'#86efac'},
+      {label:'Del Pkgs/Wk',data:chartDrv.map(d=>d.dp_avg),backgroundColor:'#22c55e'},
+      {label:'Ecom Pkgs/Wk',data:chartDrv.map(d=>d.ep_avg),backgroundColor:'#15803d'}
     ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}}},
     scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>v.toLocaleString()}}}}});
 }
@@ -683,10 +761,131 @@ document.querySelectorAll('#execTable th, #opsTable th').forEach(th=>{
   });
 });
 
+function renderTrends(range){
+  destroyCharts();
+
+  // Separate peak vs non-peak weeks
+  const peakWeeks=range.filter(w=>isPeak(w.we));
+  const normalWeeks=range.filter(w=>!isPeak(w.we));
+  const avg=(arr,fn)=>arr.length>0?arr.reduce((s,w)=>s+fn(w),0)/arr.length:0;
+
+  // Peak vs Non-Peak grouped bar
+  const peakLabels=['Net Settlement','P&D Revenue','Total Packages','Total Stops','Surcharges'];
+  const peakData=[avg(peakWeeks,w=>w.net),avg(peakWeeks,w=>w.pd),avg(peakWeeks,w=>w.pp+w.dp+w.ep),avg(peakWeeks,w=>w.ts),avg(peakWeeks,w=>w.fs+w.peak)];
+  const normData=[avg(normalWeeks,w=>w.net),avg(normalWeeks,w=>w.pd),avg(normalWeeks,w=>w.pp+w.dp+w.ep),avg(normalWeeks,w=>w.ts),avg(normalWeeks,w=>w.fs+w.peak)];
+  // Normalize to percentages relative to normal (normal=100)
+  const pctData=peakData.map((v,i)=>normData[i]>0?Math.round(v/normData[i]*100):0);
+  const normPct=normData.map(()=>100);
+  charts.peakComp=new Chart(document.getElementById('cPeakComp'),{type:'bar',data:{labels:peakLabels,datasets:[
+    {label:'Peak ('+peakWeeks.length+' wks)',data:pctData,backgroundColor:'rgba(220,38,38,0.5)',borderRadius:4},
+    {label:'Normal ('+normalWeeks.length+' wks)',data:normPct,backgroundColor:'rgba(37,99,235,0.4)',borderRadius:4}
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}},
+    tooltip:{callbacks:{label:ctx=>{
+      const i=ctx.dataIndex;const isP=ctx.datasetIndex===0;
+      const val=isP?peakData[i]:normData[i];
+      const label=ctx.dataset.label;
+      if(i<=1) return label+': $'+Math.round(val).toLocaleString()+' avg/wk ('+ctx.parsed.y+'%)';
+      return label+': '+Math.round(val).toLocaleString()+' avg/wk ('+ctx.parsed.y+'%)'
+    }}}},scales:{y:{ticks:{callback:v=>v+'%'},title:{display:true,text:'% of Normal Period',font:{size:11}}}}}});
+
+  // Monthly trends
+  const months={};
+  range.forEach(w=>{
+    const d=parseWE(w.we);
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    const label=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+String(d.getFullYear()).slice(2);
+    if(!months[key]) months[key]={label,net:0,pkgs:0,stops:0,weeks:0};
+    months[key].net+=w.net;months[key].pkgs+=w.pp+w.dp+w.ep;months[key].stops+=w.ts;months[key].weeks++;
+  });
+  const mKeys=Object.keys(months).sort();
+  const mLabels=mKeys.map(k=>months[k].label);
+  charts.monthly=new Chart(document.getElementById('cMonthly'),{type:'bar',data:{labels:mLabels,datasets:[
+    {label:'Avg Net/Wk',data:mKeys.map(k=>Math.round(months[k].net/months[k].weeks)),backgroundColor:'rgba(37,99,235,0.5)',borderRadius:4,yAxisID:'y'},
+    {label:'Avg Pkgs/Wk',data:mKeys.map(k=>Math.round(months[k].pkgs/months[k].weeks)),type:'line',borderColor:'#059669',borderWidth:2,pointRadius:4,yAxisID:'y1'}
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}},
+    tooltip:{callbacks:{label:ctx=>{
+      const v=ctx.parsed.y;return ctx.dataset.label+': '+(ctx.datasetIndex===0?'$'+v.toLocaleString():v.toLocaleString())}}}},
+    scales:{y:{position:'left',ticks:{callback:v=>'$'+v.toLocaleString()},title:{display:true,text:'Net Settlement',font:{size:11}}},
+      y1:{position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'Packages',font:{size:11}}}}}});
+
+  // Contract period comparison
+  const cGroups={};
+  range.forEach(w=>{
+    const c=getContract(w.we);
+    if(!cGroups[c.name]) cGroups[c.name]={name:c.name,desig:c.desig,color:c.color,weeks:0,net:0,pd:0,pkgs:0,stops:0,dd:0,surcharge:0,oc:0};
+    const g=cGroups[c.name];
+    g.weeks++;g.net+=w.net;g.pd+=w.pd;g.pkgs+=w.pp+w.dp+w.ep;g.stops+=w.ts;g.dd+=w.driver_days;g.surcharge+=w.fs+w.peak;g.oc+=w.oc;
+  });
+  const cArr=Object.values(cGroups);
+  charts.contractComp=new Chart(document.getElementById('cContractComp'),{type:'bar',data:{
+    labels:cArr.map(c=>c.name+' ('+c.desig+'%)'),
+    datasets:[
+      {label:'Avg Net/Wk',data:cArr.map(c=>Math.round(c.net/c.weeks)),backgroundColor:cArr.map(c=>c.color+'99'),borderRadius:4}
+    ]},options:{responsive:true,indexAxis:'horizontal',plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:ctx=>{const c=cArr[ctx.dataIndex];return [
+        'Net/Wk: $'+Math.round(c.net/c.weeks).toLocaleString(),
+        'Net/Route: $'+Math.round(c.net/c.dd).toLocaleString(),
+        'Pkgs/Wk: '+Math.round(c.pkgs/c.weeks).toLocaleString(),
+        c.weeks+' weeks'
+      ]}}}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString()}}}}});
+
+  // Cost structure by contract period
+  charts.costByPeriod=new Chart(document.getElementById('cCostByPeriod'),{type:'bar',data:{
+    labels:cArr.map(c=>c.name),
+    datasets:[
+      {label:'P&D Variable',data:cArr.map(c=>Math.round(c.pd/c.weeks)),backgroundColor:'rgba(37,99,235,0.6)',stack:'s'},
+      {label:'Fixed Charges',data:cArr.map(c=>Math.round(c.oc/c.weeks)),backgroundColor:'rgba(220,38,38,0.25)',stack:'s'},
+      {label:'Surcharges',data:cArr.map(c=>Math.round(c.surcharge/c.weeks)),backgroundColor:'rgba(245,158,11,0.5)',stack:'s'}
+    ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
+    scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'$'+v.toLocaleString()},title:{display:true,text:'Avg $ per Week',font:{size:11}}}}}});
+
+  // Period summary table
+  const allPeriods=[
+    ...cArr.map(c=>({
+      period:c.name+' (DESIG '+c.desig+'%)',weeks:c.weeks,
+      avgNet:c.net/c.weeks,avgNetRoute:c.dd>0?c.net/c.dd:0,
+      avgPkgs:c.pkgs/c.weeks,avgStops:c.stops/c.weeks,
+      avgDrivers:c.dd/c.weeks/5,desig:c.desig+'%',avgSurcharge:c.surcharge/c.weeks
+    })),
+    {period:'Peak Season',weeks:peakWeeks.length,
+      avgNet:avg(peakWeeks,w=>w.net),avgNetRoute:avg(peakWeeks,w=>w.driver_days>0?w.net/w.driver_days:0),
+      avgPkgs:avg(peakWeeks,w=>w.pp+w.dp+w.ep),avgStops:avg(peakWeeks,w=>w.ts),
+      avgDrivers:avg(peakWeeks,w=>w.dc),desig:'Mixed',avgSurcharge:avg(peakWeeks,w=>w.fs+w.peak)},
+    {period:'Non-Peak',weeks:normalWeeks.length,
+      avgNet:avg(normalWeeks,w=>w.net),avgNetRoute:avg(normalWeeks,w=>w.driver_days>0?w.net/w.driver_days:0),
+      avgPkgs:avg(normalWeeks,w=>w.pp+w.dp+w.ep),avgStops:avg(normalWeeks,w=>w.ts),
+      avgDrivers:avg(normalWeeks,w=>w.dc),desig:'Mixed',avgSurcharge:avg(normalWeeks,w=>w.fs+w.peak)}
+  ];
+  document.getElementById('trendBody').innerHTML=allPeriods.map(p=>`<tr>
+    <td><strong>${p.period}</strong></td><td class="num">${p.weeks}</td>
+    <td class="num">${fm(Math.round(p.avgNet))}</td><td class="num">$${Math.round(p.avgNetRoute)}</td>
+    <td class="num">${fi(Math.round(p.avgPkgs))}</td><td class="num">${fi(Math.round(p.avgStops))}</td>
+    <td class="num">${typeof p.avgDrivers==='number'?p.avgDrivers.toFixed(1):p.avgDrivers}</td>
+    <td class="num">${p.desig}</td><td class="num">${fm(Math.round(p.avgSurcharge))}</td>
+  </tr>`).join('');
+}
+
+function exportCSV(){
+  const range=getRange();
+  if(!range.length) return;
+  const headers=['Week','Net Settlement','P&D Revenue','Fixed Charges','Total Charges','Total Pkgs','PU Pkgs','Del Pkgs','Ecom Pkgs','Total Stops','PU Stops','Del Stops','Ecom Stops','Drivers','Driver-Days','Net/Route','DESIG %','Fuel Surge','Peak Charge','P&D Adj','Large Pkg','Fuel Current','Fuel Base','Service Charge','Time Definite','Doubles','Non-Scan'];
+  const rows=range.map(w=>{
+    const dd=w.driver_days;
+    return[w.we,w.net,w.pd,w.oc,w.tc,w.pp+w.dp+w.ep,w.pp,w.dp,w.ep,w.ts,w.ps,w.dss,w.es,w.dc,dd,dd>0?(w.net/dd).toFixed(2):0,w.desig,w.fs,w.peak,w.adjn||0,w.lg,w.cf,w.bf,w.svc,w.td,w.dbl,w.ns];
+  });
+  const csv=[headers.join(','),...rows.map(r=>r.join(','))].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='BLI_Dashboard_Export_'+range[0].we.replace(/\//g,'-')+'_to_'+range[range.length-1].we.replace(/\//g,'-')+'.csv';
+  a.click();URL.revokeObjectURL(url);
+}
+
 // Expose functions to global scope for HTML onclick/onchange handlers
 window.setView = setView;
 window.onRangeChange = onRangeChange;
 window.render = render;
+window.exportCSV = exportCSV;
 
 render();
 })();
