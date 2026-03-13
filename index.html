@@ -54,10 +54,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <body>
 
 <div class="hero">
-  <div class="badge">ISP C8882435 &bull; Station 00265 Morgantown &bull; CSA 303475</div>
+  <div class="badge">Station 00265 Morgantown &bull; CSA 303475 &bull; ISP C8882435 / C8892307</div>
   <h1>Better Logistics Inc</h1>
   <p class="sub">FedEx Ground ISP Operations Dashboard</p>
-  <a href="dashboard.html" class="hero-btn">Open Dashboard</a>
+  <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+    <a href="dashboard.html" class="hero-btn">Operations Dashboard</a>
+    <a href="https://bli-negotiations.vercel.app" class="hero-btn" style="background:#7c3aed;color:#fff;border:2px solid rgba(255,255,255,0.3)">Contract Negotiations &#8594;</a>
+  </div>
 </div>
 
 <div class="container">
@@ -65,7 +68,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div class="card">
     <h2><span class="icon">&#128202;</span> What Is This Dashboard?</h2>
     <p>This dashboard transforms your weekly FedEx Ground charge statements into actionable insights. Instead of manually reviewing PDF statements, you get automated tracking of revenue, stop counts, driver performance, contract rates, and surcharges — all in one place.</p>
-    <p>Data is updated weekly as new charge statements are released by FedEx. The dashboard currently tracks <strong>19 weeks</strong> of data from October 2025 through February 2026.</p>
+    <p>Data is updated weekly as new charge statements are released by FedEx. The dashboard currently tracks <strong>48 weeks</strong> of data from April 2025 through February 2026.</p>
+  </div>
+
+  <div class="card" style="border-left:4px solid #7c3aed;background:linear-gradient(135deg,#faf5ff 0%,#fff 100%)">
+    <h2><span class="icon">&#128221;</span> Contract Negotiation Analyzer <span style="background:#7c3aed;color:#fff;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600">NEW</span></h2>
+    <p>Your new 3-year contract (C8892307) has a <strong>March 24, 2026 deadline</strong>. FedEx offered three MESO options — we ran your actual 48 weeks of volume data through each one to project which deal earns the most.</p>
+    <p>The analyzer compares rate structures, projects annual and 3-year revenue, shows how FedEx's estimates compare to reality, and runs sensitivity analysis on volume changes.</p>
+    <a href="https://bli-negotiations.vercel.app" style="display:inline-block;margin-top:10px;background:#7c3aed;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;transition:all .2s">Open Negotiation Analyzer &#8594;</a>
   </div>
 
   <div class="card">
