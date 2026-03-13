@@ -161,6 +161,10 @@ tr:hover{background:#f8fafc}
 
 <div id="rangeLabel" style="font-size:12px;color:var(--gray);margin-bottom:8px;font-weight:600"></div>
 <div id="alert" class="alert"></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+  <div id="kpiDateLabel" style="font-size:12px;color:var(--blue);font-weight:600"></div>
+  <div id="kpiCompareLabel" style="font-size:11px;color:var(--gray)"></div>
+</div>
 <div id="kpiRow" class="kpi-row"></div>
 
 <!-- EXECUTIVE VIEW -->
@@ -466,6 +470,9 @@ function updateContractInfo(w){
 }
 
 function renderKPIs(w,p,range){
+  // Update KPI date labels
+  document.getElementById('kpiDateLabel').textContent='Week of '+w.we;
+  document.getElementById('kpiCompareLabel').textContent=p?'vs prior week ('+p.we+')':'';
   const dd=w.driver_days,revRoute=dd>0?w.net/dd:0;
   const pdd=p?p.driver_days:null,prevRevRoute=pdd?p.net/pdd:null;
   const tp=w.pp+w.dp+w.ep,ptp=p?(p.pp+p.dp+p.ep):null;
