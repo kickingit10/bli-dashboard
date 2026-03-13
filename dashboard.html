@@ -166,6 +166,10 @@ tr:hover{background:#f8fafc}
   <div id="kpiCompareLabel" style="font-size:11px;color:var(--gray)"></div>
 </div>
 <div id="kpiRow" class="kpi-row"></div>
+<div id="weeklyDelta" class="card card-full" style="margin-bottom:16px;display:none;border-left:4px solid var(--blue)">
+  <h3 style="margin-bottom:8px">What Changed This Week</h3>
+  <div id="deltaContent" style="font-size:13px;line-height:1.8;color:#374151"></div>
+</div>
 
 <!-- EXECUTIVE VIEW -->
 <div id="execView" class="section active">
@@ -183,7 +187,7 @@ tr:hover{background:#f8fafc}
     <div class="card"><h3>How Has the LP Rate Changed?</h3><canvas id="cDesig"></canvas></div>
   </div>
   <div class="grid-2">
-    <div class="card"><h3>Fuel: Current vs Base Rate</h3><canvas id="cFuel"></canvas></div>
+    <div class="card"><h3>Fuel Surcharge Trend</h3><canvas id="cFuel"></canvas></div>
     <div class="card"><h3>Large Package Surcharge Trend</h3><canvas id="cLargePkg"></canvas></div>
   </div>
 
@@ -294,7 +298,7 @@ tr:hover{background:#f8fafc}
     <table id="trendTable">
       <thead><tr>
         <th>Period</th><th>Weeks</th><th>Avg Net</th><th>Avg Net/Route</th>
-        <th>Avg Pkgs</th><th>Avg Stops</th><th>Avg Drivers</th><th>LP %</th><th>Avg Surcharges</th>
+        <th>Avg Pkgs</th><th>Avg Stops</th><th>Avg Drivers</th><th>Avg Surcharges</th>
       </tr></thead>
       <tbody id="trendBody"></tbody>
     </table>
@@ -506,7 +510,7 @@ function renderKPIs(w,p,range){
   });
   const contractTipRows=Object.values(contractGroups).map(c=>{
     const avgRR=c.totalDD>0?c.totalNet/c.totalDD:0;
-    return `<div class="tip-row"><span class="tip-label">${c.name} (${c.desig}%)</span><span class="tip-val">${avgRR.toFixed(0)}/route &middot; ${c.weeks}wk</span></div>`;
+    return `<div class="tip-row"><span class="tip-label">${c.name} (${c.desig}%)</span><span class="tip-val">$${avgRR.toFixed(0)}/route &middot; ${c.weeks}wk</span></div>`;
   }).join('');
 
   const kpis=view==='exec'||view==='daily'?[
@@ -571,6 +575,39 @@ function destroyCharts(){Object.values(charts).forEach(c=>{if(c)c.destroy()});ch
 function renderExec(range){
   destroyCharts();
   const labels=range.map(w=>w.we);
+
+  // ── Weekly Delta ──────────────────────────────────────────────
+  if (range.length >= 2) {
+    const curr = range[range.length - 1];
+    const prev = range[range.length - 2];
+    const deltaEl = document.getElementById('weeklyDelta');
+    deltaEl.style.display = 'block';
+    const d = (a, b) => a - b;
+    const pct = (a, b) => b === 0 ? 0 : ((a - b) / b * 100);
+    const arrow = v => v > 0 ? '\u2191' : v < 0 ? '\u2193' : '\u2192';
+    const cls = (v) => v === 0 ? 'color:#6b7280' : (v > 0 ? 'color:#059669' : 'color:#dc2626');
+    const fmtD = (v, prefix) => `<span style="${cls(v)};font-weight:700">${arrow(v)} ${prefix}${Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}</span>`;
+    const fmtPctD = v => `<span style="${cls(v)}">(${v > 0 ? '+' : ''}${v.toFixed(1)}%)</span>`;
+    const netChg = d(curr.net, prev.net);
+    const stopsChg = d(curr.ts, prev.ts);
+    const pkgsChg = d(curr.dp + curr.ep, prev.dp + prev.ep);
+    const dcChg = d(curr.dc, prev.dc);
+    const revRoute = curr.driver_days > 0 ? curr.net / curr.driver_days : 0;
+    const prevRevRoute = prev.driver_days > 0 ? prev.net / prev.driver_days : 0;
+    const rrChg = d(revRoute, prevRevRoute);
+    document.getElementById('deltaContent').innerHTML =
+      `<strong>Week of ${curr.we} vs ${prev.we}:</strong> ` +
+      `Net ${fmtD(netChg, '$')} ${fmtPctD(pct(curr.net, prev.net))} &bull; ` +
+      `Total Stops ${fmtD(stopsChg, '')} &bull; ` +
+      `Packages ${fmtD(pkgsChg, '')} &bull; ` +
+      `Drivers: ${curr.dc} (${dcChg > 0 ? '+' : ''}${dcChg}) &bull; ` +
+      `Net/Route: ${fmtD(Math.round(rrChg), '$')}` +
+      (curr.fs > 0 && prev.fs === 0 ? ' &bull; <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">Surge charges started</span>' : '') +
+      (curr.fs === 0 && prev.fs > 0 ? ' &bull; <span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">Surge charges ended</span>' : '') +
+      (curr.peak > 0 && prev.peak === 0 ? ' &bull; <span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">Peak service charge started</span>' : '');
+  } else {
+    document.getElementById('weeklyDelta').style.display = 'none';
+  }
 
   // Settlement — stacked bar with net line (FIX: use separate y-axis for net line)
   const pdData=range.map(w=>w.pd);
@@ -659,13 +696,24 @@ function renderExec(range){
     scales:{y:{min:Math.max(0,Math.floor((desigMin-desigPad)*10)/10),max:Math.ceil((desigMax+desigPad)*10)/10,
       title:{display:true,text:'Large Package (LP) %',font:{size:11}}}}}});
 
-  // Fuel
-  charts.fuel=new Chart(document.getElementById('cFuel'),{type:'line',data:{labels,datasets:[
-    {label:'Current',data:range.map(w=>w.cf),borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,0.08)',fill:true,tension:.3,pointRadius:3},
-    {label:'Base',data:range.map(w=>w.bf),borderColor:'#9ca3af',borderDash:[5,5],pointRadius:0}
-  ]},options:{responsive:true,maintainAspectRatio:true,
-    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}}},
-    scales:{y:{ticks:{callback:v=>'$'+v.toFixed(3)}}}}});
+  // Fuel — bar chart for weekly fuel surcharge amount, with rate overlay where available
+  const fuelAmts=range.map(w=>w.fuel_amt||0);
+  const fuelDatasets=[{label:'Fuel Surcharge ($)',data:fuelAmts,backgroundColor:'rgba(220,38,38,0.4)',borderRadius:4,yAxisID:'y'}];
+  const hasFuelRates=range.some(w=>w.cf>0);
+  if(hasFuelRates){
+    fuelDatasets.push({label:'Current Rate',data:range.map(w=>w.cf||null),borderColor:'#dc2626',borderWidth:2,pointRadius:3,type:'line',tension:.3,yAxisID:'y1',spanGaps:true});
+    fuelDatasets.push({label:'Base Rate',data:range.map(w=>w.bf||null),borderColor:'#9ca3af',borderDash:[5,5],pointRadius:0,type:'line',yAxisID:'y1',spanGaps:true});
+  }
+  charts.fuel=new Chart(document.getElementById('cFuel'),{type:'bar',data:{labels,datasets:fuelDatasets},
+    options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:10,font:{size:11}}},
+      tooltip:{callbacks:{label:ctx=>{
+        if(ctx.dataset.yAxisID==='y1') return ctx.dataset.label+': $'+ctx.parsed.y.toFixed(3)+'/gal';
+        return 'Fuel Surcharge: $'+ctx.parsed.y.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})
+      }}}},
+    scales:{y:{beginAtZero:true,ticks:{callback:v=>'$'+v.toLocaleString()},title:{display:true,text:'Fuel Surcharge ($)',font:{size:10}}},
+      ...(hasFuelRates?{y1:{position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>'$'+v.toFixed(2)},title:{display:true,text:'Rate ($/gal)',font:{size:10}}}}:{})
+    }}});
 
   // Large Package
   charts.largePkg=new Chart(document.getElementById('cLargePkg'),{type:'bar',data:{labels,datasets:[
@@ -708,6 +756,7 @@ function renderExec(range){
 
 function renderOps(range){
   destroyCharts();
+  document.getElementById('weeklyDelta').style.display='none';
   const labels=range.map(w=>w.we);
   const rangeLabel=document.getElementById('range').selectedOptions[0].text;
   ['opsRange','opsRange2','opsChartRange','revLeaderRange'].forEach(id=>{
@@ -867,6 +916,7 @@ document.querySelectorAll('#execTable th, #opsTable th').forEach(th=>{
 
 function renderTrends(range){
   destroyCharts();
+  document.getElementById('weeklyDelta').style.display='none';
 
   // Separate peak vs non-peak weeks
   const peakWeeks=range.filter(w=>isPeak(w.we));
@@ -953,29 +1003,30 @@ function renderTrends(range){
       period:c.name+' (LP '+c.desig+'%)',weeks:c.weeks,
       avgNet:c.net/c.weeks,avgNetRoute:c.dd>0?c.net/c.dd:0,
       avgPkgs:c.pkgs/c.weeks,avgStops:c.stops/c.weeks,
-      avgDrivers:c.dd/c.weeks/5,desig:c.desig+'%',avgSurcharge:c.surcharge/c.weeks
+      avgDrivers:c.dd/c.weeks/6,avgSurcharge:c.surcharge/c.weeks
     })),
     {period:'Peak Season',weeks:peakWeeks.length,
       avgNet:avg(peakWeeks,w=>w.net),avgNetRoute:avg(peakWeeks,w=>w.driver_days>0?w.net/w.driver_days:0),
       avgPkgs:avg(peakWeeks,w=>w.pp+w.dp+w.ep),avgStops:avg(peakWeeks,w=>w.ts),
-      avgDrivers:avg(peakWeeks,w=>w.dc),desig:'Mixed',avgSurcharge:avg(peakWeeks,w=>w.fs+w.peak)},
+      avgDrivers:avg(peakWeeks,w=>w.dc),avgSurcharge:avg(peakWeeks,w=>w.fs+w.peak)},
     {period:'Non-Peak',weeks:normalWeeks.length,
       avgNet:avg(normalWeeks,w=>w.net),avgNetRoute:avg(normalWeeks,w=>w.driver_days>0?w.net/w.driver_days:0),
       avgPkgs:avg(normalWeeks,w=>w.pp+w.dp+w.ep),avgStops:avg(normalWeeks,w=>w.ts),
-      avgDrivers:avg(normalWeeks,w=>w.dc),desig:'Mixed',avgSurcharge:avg(normalWeeks,w=>w.fs+w.peak)}
+      avgDrivers:avg(normalWeeks,w=>w.dc),avgSurcharge:avg(normalWeeks,w=>w.fs+w.peak)}
   ];
   document.getElementById('trendBody').innerHTML=allPeriods.map(p=>`<tr>
     <td><strong>${p.period}</strong></td><td class="num">${p.weeks}</td>
     <td class="num">${fm(Math.round(p.avgNet))}</td><td class="num">$${Math.round(p.avgNetRoute)}</td>
     <td class="num">${fi(Math.round(p.avgPkgs))}</td><td class="num">${fi(Math.round(p.avgStops))}</td>
     <td class="num">${typeof p.avgDrivers==='number'?p.avgDrivers.toFixed(1):p.avgDrivers}</td>
-    <td class="num">${p.desig}</td><td class="num">${fm(Math.round(p.avgSurcharge))}</td>
+    <td class="num">${fm(Math.round(p.avgSurcharge))}</td>
   </tr>`).join('');
 }
 
 // ===== NEW: DAILY VIEW — Day-of-Week Analysis =====
 function renderDaily(range){
   destroyCharts();
+  document.getElementById('weeklyDelta').style.display='none';
   const DOW_ORDER=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const DOW_SHORT=['Mon','Tue','Wed','Thu','Fri','Sat'];
   const DOW_COLORS=['#2563eb','#7c3aed','#059669','#d97706','#dc2626','#6b7280'];
@@ -1087,35 +1138,46 @@ function renderDaily(range){
     scales:{y:{beginAtZero:true,ticks:{callback:v=>v.toLocaleString()},title:{display:true,text:'Stops',font:{size:11}}}}}});
 
   // DOW Summary cards (for staffing)
-  const busiestDay=dowAvg.reduce((a,b)=>b.total_stops>a.total_stops?b:a);
-  const lightestDay=dowAvg.filter(d=>d.count>0).reduce((a,b)=>b.total_stops<a.total_stops?b:a);
-  const overallAvg=Math.round(dowAvg.reduce((s,d)=>s+d.total_stops,0)/dowAvg.filter(d=>d.count>0).length);
+  const activeDow=dowAvg.filter(d=>d.count>0);
+  const busiestDay=activeDow.reduce((a,b)=>b.total_stops>a.total_stops?b:a);
+  const lightestDay=activeDow.reduce((a,b)=>b.total_stops<a.total_stops?b:a);
+  const overallAvg=Math.round(activeDow.reduce((s,d)=>s+d.total_stops,0)/activeDow.length);
+  const hasFullDaily=allDaily.some(d=>(d.del_stops||0)>0);
+  const dataNote=hasFullDaily?'':'<div style="font-size:11px;color:#92400e;margin-top:4px"><em>Note: Early weeks only include e-commerce stop data. Later weeks include all stop types.</em></div>';
 
   document.getElementById('dowSummary').innerHTML=`
     <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px;line-height:1.6">
       <strong style="color:#065f46">Staffing Insight:</strong>
-      <strong>${busiestDay.dow}</strong> is the busiest day (avg ${busiestDay.total_stops} stops),
-      <strong>${lightestDay.dow}</strong> is lightest (avg ${lightestDay.total_stops} stops) —
-      that's a <strong>${Math.round((busiestDay.total_stops-lightestDay.total_stops)/lightestDay.total_stops*100)}%</strong> swing.
-      Consider staffing ${Math.ceil(busiestDay.total_stops/overallAvg*100-100)}% above average on ${busiestDay.short}s.
+      <strong>${busiestDay.dow}</strong> averages <strong>${fi(busiestDay.total_stops)} stops/day</strong> (busiest),
+      while <strong>${lightestDay.dow}</strong> averages <strong>${fi(lightestDay.total_stops)} stops/day</strong> (lightest) &mdash;
+      a <strong>${Math.round((busiestDay.total_stops-lightestDay.total_stops)/lightestDay.total_stops*100)}% volume swing</strong> between days.
+      The daily average across all days is <strong>${fi(overallAvg)} stops</strong>.
+      ${dataNote}
     </div>
     <div class="dow-summary">
-      ${dowAvg.filter(d=>d.count>0).map(d=>{
+      ${activeDow.map(d=>{
         const pctOfAvg=overallAvg>0?Math.round(d.total_stops/overallAvg*100):100;
+        const diff=d.total_stops-overallAvg;
+        const diffSign=diff>=0?'+':'';
         const barColor=pctOfAvg>110?'var(--red)':pctOfAvg<90?'var(--blue)':'var(--green)';
+        const statusLabel=pctOfAvg>110?'Above avg':pctOfAvg<90?'Below avg':'Near avg';
         return `<div class="dow-card">
           <div class="dow-label">${d.dow}</div>
-          <div class="dow-val" style="color:${barColor}">${d.total_stops}</div>
-          <div class="dow-sub">stops/day avg</div>
-          <div style="margin-top:6px;font-size:11px">
-            <span style="color:var(--gray)">${d.del_pkgs} del</span> &bull;
-            <span style="color:var(--gray)">${d.pu_pkgs} pu</span> &bull;
-            <span style="color:var(--gray)">${d.ec_pkgs} ecom</span>
+          <div class="dow-val" style="color:${barColor}">${fi(d.total_stops)}</div>
+          <div class="dow-sub">avg stops/day</div>
+          <div style="margin-top:6px;font-size:11px;line-height:1.5">
+            <div><strong>${fi(d.del_pkgs)}</strong> <span style="color:var(--gray)">delivery pkgs</span></div>
+            <div><strong>${fi(d.pu_pkgs)}</strong> <span style="color:var(--gray)">pickup pkgs</span></div>
+            <div><strong>${fi(d.ec_pkgs)}</strong> <span style="color:var(--gray)">e-com pkgs</span></div>
           </div>
-          <div style="margin-top:4px;height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden">
+          <div style="margin-top:6px;height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden">
             <div style="width:${Math.min(pctOfAvg,150)}%;height:100%;background:${barColor};border-radius:2px"></div>
           </div>
-          <div style="font-size:10px;color:var(--gray);margin-top:2px">${pctOfAvg}% of avg &bull; ${d.count} days</div>
+          <div style="font-size:10px;margin-top:3px">
+            <span style="color:${barColor};font-weight:600">${statusLabel}</span>
+            <span style="color:var(--gray)"> &mdash; ${diffSign}${fi(diff)} stops (${pctOfAvg}% of avg)</span>
+          </div>
+          <div style="font-size:10px;color:var(--gray);margin-top:1px">${d.count} days sampled</div>
         </div>`;
       }).join('')}
     </div>`;
