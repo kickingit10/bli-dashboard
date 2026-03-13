@@ -470,13 +470,30 @@ function updateContractInfo(w){
 }
 
 function renderKPIs(w,p,range){
-  // Update KPI date labels
-  document.getElementById('kpiDateLabel').textContent='Week of '+w.we;
-  document.getElementById('kpiCompareLabel').textContent=p?'vs prior week ('+p.we+')':'';
-  const dd=w.driver_days,revRoute=dd>0?w.net/dd:0;
-  const pdd=p?p.driver_days:null,prevRevRoute=pdd?p.net/pdd:null;
-  const tp=w.pp+w.dp+w.ep,ptp=p?(p.pp+p.dp+p.ep):null;
-  const surcharge=w.fs+w.peak+(w.adjn||0);
+  // Update date label to show full range
+  const n=range.length;
+  document.getElementById('kpiDateLabel').textContent=range[0].we+' \u2014 '+range[n-1].we+' ('+n+' week'+(n>1?'s':'')+')';
+  document.getElementById('kpiCompareLabel').textContent='';
+
+  // Range aggregates
+  const rNet=range.reduce((s,r)=>s+r.net,0);
+  const rPD=range.reduce((s,r)=>s+r.pd,0);
+  const rOC=range.reduce((s,r)=>s+r.oc,0);
+  const rDD=range.reduce((s,r)=>s+(r.driver_days||0),0);
+  const rTP=range.reduce((s,r)=>s+r.pp+r.dp+r.ep,0);
+  const rTS=range.reduce((s,r)=>s+r.ts,0);
+  const rPP=range.reduce((s,r)=>s+r.pp,0);
+  const rDP=range.reduce((s,r)=>s+r.dp,0);
+  const rEP=range.reduce((s,r)=>s+r.ep,0);
+  const rFS=range.reduce((s,r)=>s+r.fs,0);
+  const rPeak=range.reduce((s,r)=>s+r.peak,0);
+  const rAdj=range.reduce((s,r)=>s+(r.adjn||0),0);
+  const rSurge=rFS+rPeak+rAdj;
+  const avgNet=rNet/n;
+  const avgTP=rTP/n;
+  const avgDC=range.reduce((s,r)=>s+r.dc,0)/n;
+  const revRoute=rDD>0?rNet/rDD:0;
+  const peakWeeks=range.filter(r=>isPeak(r.we)).length;
 
   // Contract period tooltip data
   const contractGroups={};
@@ -485,52 +502,45 @@ function renderKPIs(w,p,range){
     if(!contractGroups[c.name]) contractGroups[c.name]={name:c.name,desig:c.desig,weeks:0,totalNet:0,totalDD:0,color:c.color};
     contractGroups[c.name].weeks++;
     contractGroups[c.name].totalNet+=r.net;
-    contractGroups[c.name].totalDD+=r.driver_days;
+    contractGroups[c.name].totalDD+=(r.driver_days||0);
   });
   const contractTipRows=Object.values(contractGroups).map(c=>{
     const avgRR=c.totalDD>0?c.totalNet/c.totalDD:0;
-    return `<div class="tip-row"><span class="tip-label">${c.name} (${c.desig}%)</span><span class="tip-val">$${avgRR.toFixed(0)}/route &middot; ${c.weeks}wk</span></div>`;
+    return `<div class="tip-row"><span class="tip-label">${c.name} (${c.desig}%)</span><span class="tip-val">${avgRR.toFixed(0)}/route &middot; ${c.weeks}wk</span></div>`;
   }).join('');
 
-  // Range averages for tooltips
-  const avgNet=range.reduce((s,r)=>s+r.net,0)/range.length;
-  const avgTP=range.reduce((s,r)=>s+r.pp+r.dp+r.ep,0)/range.length;
-  const totalSurge=range.reduce((s,r)=>s+r.fs+r.peak,0);
-  const peakWeeks=range.filter(r=>isPeak(r.we)).length;
-
   const kpis=view==='exec'||view==='daily'?[
-    {l:'Net Settlement',v:fm(w.net),d:fp(w.net,p?.net),
-     tip:`<h4>Settlement</h4>
-       <div class="tip-row"><span class="tip-label">Period Avg</span><span class="tip-val">${fm(avgNet)}</span></div>
-       <div class="tip-row"><span class="tip-label">P&D Variable</span><span class="tip-val">${fm(w.pd)}</span></div>
-       <div class="tip-row"><span class="tip-label">Fixed Charges</span><span class="tip-val">${fm(w.oc)}</span></div>
-       ${surcharge>0?'<div class="tip-row"><span class="tip-label">Surcharges</span><span class="tip-val" style="color:var(--red)">'+fm(surcharge)+'</span></div>':''}`},
-    {l:'Total Packages',v:fi(tp),d:fp(tp,ptp),
-     tip:`<h4>Packages</h4>
-       <div class="tip-row"><span class="tip-label">Pickup</span><span class="tip-val">${fi(w.pp)}</span></div>
-       <div class="tip-row"><span class="tip-label">Delivery</span><span class="tip-val">${fi(w.dp)}</span></div>
-       <div class="tip-row"><span class="tip-label">E-Commerce</span><span class="tip-val">${fi(w.ep)}</span></div>
-       <div class="tip-row"><span class="tip-label">Period Avg</span><span class="tip-val">${fi(Math.round(avgTP))}</span></div>`},
-    {l:'Net / Route',v:'$'+revRoute.toFixed(0),d:fp(revRoute,prevRevRoute),
+    {l:'Net Settlement',v:fm(rNet),d:{t:fm(avgNet)+'/wk avg',c:'flat'},
+     tip:`<h4>Settlement (${n} weeks)</h4>
+       <div class="tip-row"><span class="tip-label">Total</span><span class="tip-val">${fm(rNet)}</span></div>
+       <div class="tip-row"><span class="tip-label">Avg/Week</span><span class="tip-val">${fm(avgNet)}</span></div>
+       <div class="tip-row"><span class="tip-label">P&D Variable</span><span class="tip-val">${fm(rPD)}</span></div>
+       <div class="tip-row"><span class="tip-label">Fixed Charges</span><span class="tip-val">${fm(rOC)}</span></div>`},
+    {l:'Total Packages',v:fi(rTP),d:{t:fi(Math.round(avgTP))+'/wk avg',c:'flat'},
+     tip:`<h4>Packages (${n} weeks)</h4>
+       <div class="tip-row"><span class="tip-label">Pickup</span><span class="tip-val">${fi(rPP)}</span></div>
+       <div class="tip-row"><span class="tip-label">Delivery</span><span class="tip-val">${fi(rDP)}</span></div>
+       <div class="tip-row"><span class="tip-label">E-Commerce</span><span class="tip-val">${fi(rEP)}</span></div>
+       <div class="tip-row"><span class="tip-label">Avg/Week</span><span class="tip-val">${fi(Math.round(avgTP))}</span></div>`},
+    {l:'Net / Route',v:'$'+revRoute.toFixed(0),d:{t:fi(rDD)+' route-days',c:'flat'},
      tip:`<h4>Net per Route by Contract</h4>${contractTipRows}
-       <div class="tip-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px"><span class="tip-label">Current LP</span><span class="tip-val">${w.desig}%</span></div>`},
-    {l:'Active Drivers',v:w.dc,d:fp(w.dc,p?.dc),
-     tip:`<h4>Workforce</h4>
-       <div class="tip-row"><span class="tip-label">Driver-Days</span><span class="tip-val">${dd}</span></div>
-       <div class="tip-row"><span class="tip-label">Avg Days/Driver</span><span class="tip-val">${(dd/w.dc).toFixed(1)}</span></div>`},
-    {l:'Surcharges',v:surcharge>0?fm(surcharge):'$0',d:{t:surcharge>0?'Active':'None',c:surcharge>0?'down':'flat'},
-     tip:`<h4>Surcharges This Week</h4>
-       <div class="tip-row"><span class="tip-label">Surge Stop</span><span class="tip-val">${fm(w.fs)}</span></div>
-       <div class="tip-row"><span class="tip-label">Peak Svc Charge</span><span class="tip-val">${fm(w.peak)}</span></div>
-       <div class="tip-row"><span class="tip-label">P&D Adjustments</span><span class="tip-val">${fm(w.adjn||0)}</span></div>
-       <div class="tip-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px"><span class="tip-label">Period Total Surge</span><span class="tip-val">${fm(totalSurge)}</span></div>
-       <div class="tip-row"><span class="tip-label">Peak Weeks in Range</span><span class="tip-val">${peakWeeks}</span></div>`}
+       <div class="tip-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px"><span class="tip-label">Total Route-Days</span><span class="tip-val">${fi(rDD)}</span></div>`},
+    {l:'Avg Drivers',v:avgDC.toFixed(1),d:{t:fi(rDD)+' driver-days',c:'flat'},
+     tip:`<h4>Workforce (${n} weeks)</h4>
+       <div class="tip-row"><span class="tip-label">Total Driver-Days</span><span class="tip-val">${fi(rDD)}</span></div>
+       <div class="tip-row"><span class="tip-label">Avg Drivers/Week</span><span class="tip-val">${avgDC.toFixed(1)}</span></div>`},
+    {l:'Surcharges',v:rSurge>0?fm(rSurge):'$0',d:{t:rSurge>0?peakWeeks+' peak wk'+(peakWeeks!==1?'s':''):'None',c:rSurge>0?'down':'flat'},
+     tip:`<h4>Surcharges (${n} weeks)</h4>
+       <div class="tip-row"><span class="tip-label">Surge Stop</span><span class="tip-val">${fm(rFS)}</span></div>
+       <div class="tip-row"><span class="tip-label">Peak Svc Charge</span><span class="tip-val">${fm(rPeak)}</span></div>
+       <div class="tip-row"><span class="tip-label">P&D Adjustments</span><span class="tip-val">${fm(rAdj)}</span></div>
+       <div class="tip-row"><span class="tip-label">Peak Weeks</span><span class="tip-val">${peakWeeks}</span></div>`}
   ]:[
-    {l:'Active Drivers',v:w.dc,d:fp(w.dc,p?.dc),tip:''},
-    {l:'Driver-Days',v:dd,d:pdd?fp(dd,pdd):{t:'\u2014',c:'flat'},tip:''},
-    {l:'Avg Stops/Day',v:Math.round(w.ts/dd),d:pdd?fp(w.ts/dd,p.ts/pdd):{t:'\u2014',c:'flat'},tip:''},
-    {l:'Avg Pkgs/Day',v:fi(Math.round(tp/dd)),d:pdd?fp(tp/dd,ptp/pdd):{t:'\u2014',c:'flat'},tip:''},
-    {l:'Pkgs/Stop',v:(tp/w.ts).toFixed(1),d:ptp?fp(tp/w.ts,ptp/p.ts):{t:'\u2014',c:'flat'},tip:''}
+    {l:'Avg Drivers',v:avgDC.toFixed(1),d:{t:fi(rDD)+' driver-days',c:'flat'},tip:''},
+    {l:'Driver-Days',v:fi(rDD),d:{t:fi(Math.round(rDD/n))+'/wk avg',c:'flat'},tip:''},
+    {l:'Avg Stops/Day',v:rDD>0?Math.round(rTS/rDD):'—',d:{t:fi(rTS)+' total stops',c:'flat'},tip:''},
+    {l:'Avg Pkgs/Day',v:rDD>0?fi(Math.round(rTP/rDD)):'—',d:{t:fi(rTP)+' total pkgs',c:'flat'},tip:''},
+    {l:'Pkgs/Stop',v:rTS>0?(rTP/rTS).toFixed(1):'—',d:{t:n+' week'+(n>1?'s':''),c:'flat'},tip:''}
   ];
   document.getElementById('kpiRow').innerHTML=kpis.map(k=>`
     <div class="kpi"><div class="lbl">${k.l}</div><div class="val">${k.v}</div>
