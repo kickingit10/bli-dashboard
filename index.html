@@ -5,28 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Better Logistics Inc — Home</title>
 <style>
-:root{--blue:#2563eb;--dark:#1a1a2e;--gray:#6b7280;--light:#f8fafc;--border:#e2e8f0}
+:root{--accent:#2563eb;--dark:#1a1a2e;--gray:#6b7280;--light:#f8fafc;--border:#e2e8f0;--bg:#f0f2f5;--card:#fff;--text:#374151;--tip-bg:#eff6ff;--tip-border:#bfdbfe;--tip-heading:#1d4ed8;--tip-text:#1e40af;--neg-bg:#faf5ff;--neg-border:#7c3aed;--neg-gradient:linear-gradient(135deg,#faf5ff 0%,#fff 100%)}
+@media(prefers-color-scheme:dark){
+:root{--dark:#e2e8f0;--gray:#9ca3af;--light:#1e1e30;--border:#2d2d44;--bg:#0f0f1a;--card:#1a1a2e;--text:#9ca3af;--tip-bg:#1a1a2e;--tip-border:#1e3a5f;--tip-heading:#60a5fa;--tip-text:#93c5fd;--neg-bg:#1a1a2e;--neg-border:#7c3aed;--neg-gradient:linear-gradient(135deg,#1e1030 0%,#1a1a2e 100%)}
+}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;color:var(--dark);min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--dark);min-height:100vh}
 
 .hero{background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);color:#fff;padding:60px 20px 80px;text-align:center;position:relative;overflow:hidden}
-.hero::after{content:'';position:absolute;bottom:-40px;left:0;right:0;height:80px;background:#f0f2f5;border-radius:50% 50% 0 0 / 100% 100% 0 0;transform:scaleX(1.5)}
+.hero::after{content:'';position:absolute;bottom:-40px;left:0;right:0;height:80px;background:var(--bg);border-radius:50% 50% 0 0 / 100% 100% 0 0;transform:scaleX(1.5)}
 .hero h1{font-size:32px;font-weight:700;margin-bottom:8px;letter-spacing:-0.5px}
 .hero .sub{font-size:14px;opacity:0.85;margin-bottom:30px}
 .hero .badge{display:inline-block;background:rgba(255,255,255,0.15);padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:24px;backdrop-filter:blur(4px)}
-.hero-btn{display:inline-block;background:#fff;color:var(--blue);padding:14px 36px;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;transition:all .2s;box-shadow:0 4px 16px rgba(0,0,0,0.2)}
+.hero-btn{display:inline-block;background:#fff;color:var(--accent);padding:14px 36px;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;transition:all .2s;box-shadow:0 4px 16px rgba(0,0,0,0.2)}
 .hero-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,0.3)}
 
 .container{max-width:900px;margin:-30px auto 0;padding:0 20px 60px;position:relative;z-index:1}
 
-.card{background:#fff;border-radius:12px;padding:28px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:20px}
+.card{background:var(--card);border-radius:12px;padding:28px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:20px}
 .card h2{font-size:18px;font-weight:700;margin-bottom:14px;color:var(--dark);display:flex;align-items:center;gap:10px}
 .card h2 .icon{font-size:22px}
-.card p{font-size:14px;line-height:1.7;color:#374151;margin-bottom:10px}
+.card p{font-size:14px;line-height:1.7;color:var(--text);margin-bottom:10px}
 .card ul{list-style:none;padding:0}
-.card li{padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#374151;display:flex;gap:10px;align-items:flex-start}
+.card li{padding:10px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--text);display:flex;gap:10px;align-items:flex-start}
 .card li:last-child{border-bottom:none}
-.card li .step{background:var(--blue);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.card li .step{background:var(--accent);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
 
 .views-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
 .view-card{background:var(--light);border-radius:10px;padding:18px;border:1px solid var(--border)}
@@ -36,11 +39,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .metric-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .metric{background:var(--light);border-radius:8px;padding:10px 14px;border:1px solid var(--border)}
 .metric .name{font-size:12px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:0.3px}
-.metric .desc{font-size:13px;color:#374151;margin-top:2px}
+.metric .desc{font-size:13px;color:var(--text);margin-top:2px}
 
-.tip-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px 18px;margin-top:14px}
-.tip-box h4{font-size:13px;font-weight:700;color:#1d4ed8;margin-bottom:6px}
-.tip-box p{font-size:13px;color:#1e40af;margin-bottom:0;line-height:1.6}
+.tip-box{background:var(--tip-bg);border:1px solid var(--tip-border);border-radius:10px;padding:16px 18px;margin-top:14px}
+.tip-box h4{font-size:13px;font-weight:700;color:var(--tip-heading);margin-bottom:6px}
+.tip-box p{font-size:13px;color:var(--tip-text);margin-bottom:0;line-height:1.6}
 
 .footer{text-align:center;padding:20px;color:var(--gray);font-size:12px}
 
@@ -71,7 +74,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <p>Data is updated weekly as new charge statements are released by FedEx. The dashboard currently tracks <strong>48 weeks</strong> of data from April 2025 through February 2026.</p>
   </div>
 
-  <div class="card" style="border-left:4px solid #7c3aed;background:linear-gradient(135deg,#faf5ff 0%,#fff 100%)">
+  <div class="card" style="border-left:4px solid var(--neg-border);background:var(--neg-gradient)">
     <h2><span class="icon">&#128221;</span> Contract Negotiation Analyzer <span style="background:#7c3aed;color:#fff;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600">NEW</span></h2>
     <p>Your new 3-year contract (C8892307) has a <strong>March 24, 2026 deadline</strong>. FedEx offered three MESO options — we ran your actual 48 weeks of volume data through each one to project which deal earns the most.</p>
     <p>The analyzer compares rate structures, projects annual and 3-year revenue, shows how FedEx's estimates compare to reality, and runs sensitivity analysis on volume changes.</p>

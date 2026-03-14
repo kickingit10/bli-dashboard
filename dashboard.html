@@ -6,22 +6,25 @@
 <title>Better Logistics Inc — Dashboard v7</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
 <style>
-:root{--blue:#2563eb;--purple:#7c3aed;--green:#059669;--orange:#d97706;--red:#dc2626;--dark:#1a1a2e;--gray:#6b7280;--light:#f8fafc;--border:#e2e8f0}
+:root{--blue:#2563eb;--purple:#7c3aed;--green:#059669;--orange:#d97706;--red:#dc2626;--dark:#1a1a2e;--gray:#6b7280;--light:#f8fafc;--border:#e2e8f0;--bg:#f0f2f5;--card:#fff;--text:#374151;--card-shadow:rgba(0,0,0,.06);--table-header:#f8fafc;--table-row-hover:#f8fafc;--table-row-border:#f1f5f9;--input-bg:#fff;--dow-card-bg:#f8fafc}
+@media(prefers-color-scheme:dark){
+:root{--dark:#e2e8f0;--gray:#9ca3af;--light:#1e1e30;--border:#2d2d44;--bg:#0f0f1a;--card:#1a1a2e;--text:#9ca3af;--card-shadow:rgba(0,0,0,.3);--table-header:#151525;--table-row-hover:#1e1e30;--table-row-border:#2d2d44;--input-bg:#1e1e30;--dow-card-bg:#1e1e30}
+}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;color:var(--dark)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--dark)}
 .dash{max-width:1440px;margin:0 auto;padding:20px}
 header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px}
 .header-left h1{font-size:22px;font-weight:700}
 .header-left .sub{font-size:12px;color:var(--gray);margin-top:2px}
 .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.controls select,.controls button,.controls input[type=date]{padding:7px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;cursor:pointer}
+.controls select,.controls button,.controls input[type=date]{padding:7px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--input-bg);cursor:pointer;color:var(--dark)}
 .view-toggle{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
 .view-toggle button{border:none;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
 .view-toggle button.active{background:var(--blue);color:#fff}
-.view-toggle button:not(.active){background:#fff;color:var(--dark)}
+.view-toggle button:not(.active){background:var(--card);color:var(--dark)}
 .date-controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .date-controls label{font-size:11px;color:var(--gray);font-weight:600}
-.date-controls input[type=date]{padding:5px 8px;font-size:12px;border:1px solid var(--border);border-radius:6px}
+.date-controls input[type=date]{padding:5px 8px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--input-bg);color:var(--dark)}
 
 .contract-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;margin-left:6px}
 .contract-badge.c1{background:#dbeafe;color:#1e40af}
@@ -33,12 +36,12 @@ header{display:flex;justify-content:space-between;align-items:flex-start;margin-
 .alert strong{color:#78350f}
 
 .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
-.kpi{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);position:relative}
+.kpi{background:var(--card);border-radius:10px;padding:16px;box-shadow:0 1px 3px var(--card-shadow);position:relative}
 .kpi .lbl{font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .kpi .val{font-size:22px;font-weight:700;margin:4px 0}
 .kpi .chg{font-size:12px;font-weight:600}
 .kpi .chg.up{color:var(--green)}.kpi .chg.down{color:var(--red)}.kpi .chg.flat{color:var(--gray)}
-.kpi .tip{display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:100;font-size:12px;line-height:1.6}
+.kpi .tip{display:none;position:absolute;left:0;right:0;top:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:100;font-size:12px;line-height:1.6}
 .kpi:hover .tip{display:block}
 .kpi .tip h4{font-size:11px;text-transform:uppercase;color:var(--gray);margin-bottom:4px}
 .kpi .tip .tip-row{display:flex;justify-content:space-between;padding:2px 0}
@@ -49,18 +52,18 @@ header{display:flex;justify-content:space-between;align-items:flex-start;margin-
 
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
-.card{background:#fff;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card{background:var(--card);border-radius:10px;padding:18px;box-shadow:0 1px 3px var(--card-shadow)}
 .card h3{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--dark)}
 .card canvas{max-height:320px}
 .card-full{grid-column:1/-1}
 
 table{width:100%;border-collapse:collapse;font-size:12px}
-th{background:#f8fafc;padding:8px 6px;text-align:left;font-weight:600;border-bottom:2px solid var(--border);color:var(--gray);font-size:11px;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;white-space:nowrap;user-select:none}
+th{background:var(--table-header);padding:8px 6px;text-align:left;font-weight:600;border-bottom:2px solid var(--border);color:var(--gray);font-size:11px;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;white-space:nowrap;user-select:none}
 th.asc::after{content:' ▲';font-size:9px}
 th.desc::after{content:' ▼';font-size:9px}
-td{padding:7px 6px;border-bottom:1px solid #f1f5f9}
+td{padding:7px 6px;border-bottom:1px solid var(--table-row-border)}
 td.num{text-align:right;font-variant-numeric:tabular-nums}
-tr:hover{background:#f8fafc}
+tr:hover{background:var(--table-row-hover)}
 .flag{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:middle}
 .flag-high{background:#fef2f2;color:#b91c1c}.flag-low{background:#eff6ff;color:#1d4ed8}
 .flag-new{background:#f0fdf4;color:#15803d}.flag-ramp{background:#fefce8;color:#a16207}
@@ -84,7 +87,7 @@ tr:hover{background:#f8fafc}
 /* DOW heat cells */
 .dow-heat{text-align:center;font-weight:600;font-size:12px;padding:8px 4px;border-radius:4px}
 .dow-summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
-.dow-card{background:#f8fafc;border-radius:8px;padding:12px;text-align:center}
+.dow-card{background:var(--dow-card-bg);border-radius:8px;padding:12px;text-align:center}
 .dow-card .dow-label{font-size:11px;font-weight:600;color:var(--gray);text-transform:uppercase}
 .dow-card .dow-val{font-size:20px;font-weight:700;margin:4px 0}
 .dow-card .dow-sub{font-size:11px;color:var(--gray)}
@@ -123,6 +126,23 @@ tr:hover{background:#f8fafc}
   .alert{font-size:12px;padding:10px 14px}
   .dow-summary{grid-template-columns:repeat(2,1fr)}
 }
+@media(prefers-color-scheme:dark){
+  .alert{background:#2d2008;border-color:#92400e;color:#fbbf24}
+  .alert strong{color:#fcd34d}
+  .contract-badge.c1{background:#1e3a5f;color:#93c5fd}
+  .contract-badge.c2{background:#064e3b;color:#6ee7b7}
+  .contract-badge.c3{background:#451a03;color:#fcd34d}
+  .peak-badge{background:#450a0a;color:#fca5a5}
+  .flag-high{background:#450a0a;color:#fca5a5}.flag-low{background:#1e3a5f;color:#93c5fd}
+  .flag-new{background:#052e16;color:#86efac}.flag-ramp{background:#422006;color:#fde68a}
+  .flag-bulk{background:#2e1065;color:#c4b5fd}.flag-mgr{background:#0c4a6e;color:#7dd3fc}
+  .flag-surge{background:#450a0a;color:#fca5a5}.flag-peak{background:#431407;color:#fdba74}
+  .flag-adj{background:#2d2008;color:#fcd34d}
+  .tag-ec{background:#064e3b;color:#6ee7b7}.tag-mix{background:#1e3a5f;color:#93c5fd}
+  .tag-del{background:#2e1065;color:#c4b5fd}.tag-heavy{background:#2d2008;color:#fcd34d}
+  .tag-route{background:#2e1065;color:#c4b5fd}.tag-bulk{background:#2e1065;color:#c4b5fd}
+  .tag-mgr{background:#0c4a6e;color:#7dd3fc}
+}
 </style>
 </head>
 <body>
@@ -134,7 +154,7 @@ tr:hover{background:#f8fafc}
     <div class="sub">ISP C8882435 &bull; Station 00265 Morgantown &bull; CSA 303475 &bull; <span id="contractInfo"></span></div>
   </div>
   <div class="controls">
-    <a href="index.html" style="padding:7px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;text-decoration:none;color:var(--dark);font-weight:600;cursor:pointer">&#8962; Home</a>
+    <a href="index.html" style="padding:7px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);text-decoration:none;color:var(--dark);font-weight:600;cursor:pointer">&#8962; Home</a>
     <a href="https://bli-negotiations.vercel.app" style="padding:7px 14px;border:1px solid #7c3aed;border-radius:8px;font-size:13px;background:#faf5ff;text-decoration:none;color:#7c3aed;font-weight:600;cursor:pointer">&#128221; Contract Negotiations</a>
     <div class="view-toggle">
       <button id="btnExec" class="active" onclick="setView('exec')">Executive</button>
@@ -155,7 +175,7 @@ tr:hover{background:#f8fafc}
       <label>From</label><input type="date" id="dateFrom" onchange="render()">
       <label>To</label><input type="date" id="dateTo" onchange="render()">
     </div>
-    <button onclick="exportCSV()" style="padding:7px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;cursor:pointer;font-weight:600;color:var(--dark)">&#8681; CSV</button>
+    <button onclick="exportCSV()" style="padding:7px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);cursor:pointer;font-weight:600;color:var(--dark)">&#8681; CSV</button>
   </div>
 </header>
 
@@ -168,7 +188,7 @@ tr:hover{background:#f8fafc}
 <div id="kpiRow" class="kpi-row"></div>
 <div id="weeklyDelta" class="card card-full" style="margin-bottom:16px;display:none;border-left:4px solid var(--blue)">
   <h3 style="margin-bottom:8px">What Changed This Week</h3>
-  <div id="deltaContent" style="font-size:13px;line-height:1.8;color:#374151"></div>
+  <div id="deltaContent" style="font-size:13px;line-height:1.8;color:var(--text)"></div>
 </div>
 
 <!-- EXECUTIVE VIEW -->
@@ -350,6 +370,18 @@ tr:hover{background:#f8fafc}
 </div>
 
 <script>
+const DARK=window.matchMedia('(prefers-color-scheme:dark)').matches;
+const GRID_COLOR=DARK?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)';
+const TICK_COLOR=DARK?'#9ca3af':'#6b7280';
+const LEGEND_COLOR=DARK?'#e2e8f0':'#1a1a2e';
+Chart.defaults.color=TICK_COLOR;
+Chart.defaults.borderColor=GRID_COLOR;
+Chart.defaults.plugins.legend.labels.color=LEGEND_COLOR;
+Chart.defaults.plugins.tooltip.backgroundColor=DARK?'#1e1e30':'rgba(0,0,0,0.8)';
+Chart.defaults.plugins.tooltip.titleColor=DARK?'#e2e8f0':'#fff';
+Chart.defaults.plugins.tooltip.bodyColor=DARK?'#9ca3af':'#fff';
+window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>location.reload());
+
 // ===== DATA LOADED EXTERNALLY FROM data.json =====
 let D, CONTRACTS, DRIVER_ROLES;
 
